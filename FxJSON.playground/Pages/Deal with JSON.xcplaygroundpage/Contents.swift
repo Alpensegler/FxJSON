@@ -10,7 +10,7 @@
 import FxJSON
 import Foundation
 //: ## 1. Initalization
-let jsonData: [String : Any] = [
+let jsonObject: [String: Any] = [
 	"code": 0,
 	"data": [
 		"users": [
@@ -33,10 +33,10 @@ let jsonData: [String : Any] = [
 	]
 ]
 
-let data = try JSONSerialization.data(withJSONObject: jsonData, options: [])
+let data = try JSONSerialization.data(withJSONObject: jsonObject)
 
-let json = JSON(data)
-let jsonByObject = JSON(jsonData)
+let json = JSON(jsonObject)
+let jsonByObject = JSON(data: data)
 //: ## 2. Deserilization
 //: ### Using Subscript
 json["code"]
@@ -47,19 +47,19 @@ json[path]
 json[path, "name"]
 //: ### deserilize to nomal type
 //:way one (those types are all optional)
-let code = Int(json["code"]
+let code = Int(json["code"])
 let website = String(json[path]["website"])
 //:> use value param to get none-Optional type
-let uid = Int(value: json[path]["uid"])
-//:> notice that you may user Bool.init() else it will be ambiguous for compiler
-let admin = Bool.init(json[path]["admin"])
-////:way two: using operator <
-//let name: String = try json[path]//let user: [String: AnyObject]? = json["data", "users", 1]<
-//////: ### Getting date by using DateTF
-//sing DateTF
-////:getting date from StringJSON(use "yyyy-MM-dd HH:mm:ss" and defaultTimeZone as default formatter)
-//let dateOne: NSDate = try json[path]["si//let dateTwo = NSDate(json["data", "users", 1, "signUpTime"][DateTF("yyyy-MM-dd", timeZone: NSTimeZone.localTimeZone())])
-//TimeZone())])
+let uid = Int(noneNull: json[path]["uid"])
+
+let admin = Bool(json[path]["admin"])
+//:way two: using operator <
+let name = try json[path].decode() as String
+let user = try json["data", "users", 1]< as [String: Any]
+//: ### Getting date by using DateTF
+
+//:getting date from StringJSON(use "yyyy-MM-dd HH:mm:ss" and defaultTimeZone as default formatter)
+
 ////:getting date from NumberJSON(use .since1970 as default formatter)
 //guard let dateThree = NSDate(JSON(0)[DateTF(timeInterval: .year1970)]) else { f//guard let dateFour = NSDate(JSON(NSTimeIntervalSince1970)[DateTF.init(timeInterval: .referenceDate)]) else { fatalError() }
 // fatalError() }

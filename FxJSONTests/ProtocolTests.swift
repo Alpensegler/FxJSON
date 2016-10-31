@@ -39,9 +39,9 @@ class ProtocolTests: XCTestCase {
       let gender: Gender
       
       init(decode json: JSON) throws {
-        name    = try json["name"].decode()
-        age     = try json["age"].decode()
-        gender  = try json["gender"].decode()
+        name    = try json["name"]<
+        age     = try json["age"]<
+        gender  = try json["gender"]<
       }
       
       enum Gender: Int, JSONTransformable {
@@ -61,7 +61,6 @@ class ProtocolTests: XCTestCase {
     XCTAssertThrowsError(try A.init(decode: ["name": "", "age": "10"])) { (error) in
       guard case JSON.Error.deserilize = error else { XCTFail(); return }
     }
-    dump(a)
   }
   
   func testError() {

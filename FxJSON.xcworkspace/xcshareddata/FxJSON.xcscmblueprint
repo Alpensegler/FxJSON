@@ -1,0 +1,65 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "FBC7E3357A6F39E6F874FF32DFC4B75A13ABA595",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "39CB70283A1C33AFB5FF861E924945826EDC74FE" : 9223372036854775807,
+    "194A7A54F3CE0138A6C320E0643B7C60F8218891" : 9223372036854775807,
+    "FBC7E3357A6F39E6F874FF32DFC4B75A13ABA595" : 9223372036854775807,
+    "C861FC00CEE0F6A6BE81FCFF6785FAA78C58EBB3" : 9223372036854775807,
+    "58AAB0051E2B4EEDF1845A552012E6D0EBAD9127" : 9223372036854775807,
+    "583F90EC3DD082D4EA7AAAF45E99CF0F32F8BCC3" : 9223372036854775807,
+    "0A5C3A6DB1EA9211CEFA5384E9882B4D710699A4" : 9223372036854775807
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "38B7B084-1F0B-4630-92FB-7014EFF0DC42",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "39CB70283A1C33AFB5FF861E924945826EDC74FE" : "..\/..\/..\/%E9%A1%B9%E7%9B%AE\/Argo",
+    "194A7A54F3CE0138A6C320E0643B7C60F8218891" : "..\/..\/..\/%E9%A1%B9%E7%9B%AE\/Curry",
+    "FBC7E3357A6F39E6F874FF32DFC4B75A13ABA595" : "FxJSON\/",
+    "C861FC00CEE0F6A6BE81FCFF6785FAA78C58EBB3" : "..\/..\/..\/%E9%A1%B9%E7%9B%AE\/SwiftyJSON",
+    "58AAB0051E2B4EEDF1845A552012E6D0EBAD9127" : "..\/..\/..\/%E9%A1%B9%E7%9B%AE\/ObjectMapper",
+    "583F90EC3DD082D4EA7AAAF45E99CF0F32F8BCC3" : "..\/..\/..\/%E9%A1%B9%E7%9B%AE\/JASON",
+    "0A5C3A6DB1EA9211CEFA5384E9882B4D710699A4" : "..\/..\/..\/%E9%A1%B9%E7%9B%AE\/Runes"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "FxJSON",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "FxJSON.xcworkspace",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/thoughtbot\/Runes.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "0A5C3A6DB1EA9211CEFA5384E9882B4D710699A4"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/thoughtbot\/Curry.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "194A7A54F3CE0138A6C320E0643B7C60F8218891"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/thoughtbot\/Argo.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "39CB70283A1C33AFB5FF861E924945826EDC74FE"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/delba\/JASON.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "583F90EC3DD082D4EA7AAAF45E99CF0F32F8BCC3"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/Hearst-DD\/ObjectMapper.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "58AAB0051E2B4EEDF1845A552012E6D0EBAD9127"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/SwiftyJSON\/SwiftyJSON.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "C861FC00CEE0F6A6BE81FCFF6785FAA78C58EBB3"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/FrainL\/FxJSON.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "FBC7E3357A6F39E6F874FF32DFC4B75A13ABA595"
+    }
+  ]
+}

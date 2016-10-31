@@ -392,6 +392,12 @@ public extension JSON.Mapper {
 
 //MARK: - <>
 
+postfix operator <
+
+public postfix func <<T : JSONDeserializable>(json: JSON) throws -> T {
+  return try json.decode()
+}
+
 infix operator <>
 
 public func <><T : JSONTransformable>(lhs: inout T, rhs: JSON.Mapper) {

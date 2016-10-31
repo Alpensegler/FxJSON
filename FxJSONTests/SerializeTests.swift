@@ -45,9 +45,10 @@ class SerializeTests: XCTestCase {
 		XCTAssertEqual(["one", 2, 3.3, Double(4)].json,
 		               JSON(["one", 2, 3.3, Double(4)]))
 		
-		let option: Int? = nil
-		XCTAssertEqual(option.json, JSON())
-		XCTAssertEqual(Optional.some(Any.self).json, JSON())
+    guard case JSON.Error.unSupportType? = Optional.some(NSValue()).json.error else {
+      XCTFail(); return
+    }
+		XCTAssertEqual(Optional<Int>.none.json, JSON())
 		XCTAssertEqual(Optional.some("some").json, JSON("some"))
 		
 		let set: Set = ["hey", "fine?", "all right"]
@@ -55,35 +56,39 @@ class SerializeTests: XCTestCase {
 		
 		let json: JSON = [
 			"arr": ["one", 2, 3.3, Double(4)],
-			"opt": option,
+			"opt": Optional<Int>.none,
 			"set": set
 		]
-		let dic: [String: Any] = [
+		let dict: [String: Any] = [
 			"arr": ["one", 2, 3.3, Double(4)],
-			"opt": option,
+			"opt": Optional<Int>.none,
 			"set": set
 		]
-		print(XCTAssertEqual(dic.json, json))
-		
+    
+		XCTAssertEqual(dict.json, json)
+    
 		XCTAssertEqual([].json, JSON([]))
-		XCTAssertEqual([:], JSON([:]))
+    XCTAssertEqual([:], JSON(any: [:]))
 	}
 	
-	func testDeSerialize() {
+	func testDeserialize() {
+    
 		XCTAssertEqual("1234.5678", String(JSON("1234.5678")))
 		
-		XCTAssertEqual(false, Bool.init(JSON(false)))
+		XCTAssertEqual(false, Bool(JSON(false)))
 		
 		XCTAssertEqual(123, Int(JSON(123)))
-		
 		XCTAssertEqual(Int32(123), Int32(JSON(123)))
-		
 		XCTAssertEqual(Int64(123), Int64(JSON(123)))
-		
 		XCTAssertEqual(Float(1234.567), Float(JSON(1234.567)))
-		
 		XCTAssertEqual(Double(1234.5678), Double(JSON(1234.5678)))
-		
+    
+    XCTAssertEqual([1,2,3], [Int](JSON([1,2,3]))!)
+		XCTAssertEqual([123,4,5,6], [Any](JSON([123,4,5,6]))! as! [Int])
+    
+    XCTAssertEqual(["aaa": 111], [String: Int](JSON(["aaa": 111]))!)
+    XCTAssertEqual(["aaa": 111, "bbb": 222], [String: Any](JSON(["aaa": 111, "bbb": 222]))! as! [String: Int])
+    
 		XCTAssertEqual(URL(JSON("https://github.com/FrainL")),
 		               URL(string: "https://github.com/FrainL"))
 	}
