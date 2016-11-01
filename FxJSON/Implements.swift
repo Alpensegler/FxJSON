@@ -39,7 +39,7 @@ extension JSON : JSONSerializable {
 	public init(_ object: @autoclosure () throws -> JSONSerializable) {
 		do {
 			try self = object().json
-		} catch let error {
+		} catch {
 			self = .error(error)
 		}
 	}
@@ -144,6 +144,25 @@ extension Set : JSONTransformable, DefaultInitializable {
 			}
 			return element.json.object
 		}))
+	}
+}
+
+extension ImplicitlyUnwrappedOptional : JSONTransformable {
+	
+	public init?(_ json: JSON) {
+		if let T = Wrapped.self as? JSONDeserializable.Type, let value = T.init(json) {
+			self = .some(value as! Wrapped)
+		} else {
+			return nil
+		}
+	}
+	
+	public var json: JSON {
+		guard Wrapped.self is JSONSerializable.Type else {
+			return .error(JSON.Error.unSupportType(type: Wrapped.self))
+		}
+		if case let .some(v as JSONSerializable) = self { return v.json }
+		return nil
 	}
 }
 

@@ -75,6 +75,13 @@ public extension JSONDeserializable {
     let json = JSON.init(jsonString: jsonString, options: options)
     self.init(json)
 	}
+	
+	init(decode json: JSON) throws {
+		guard let value = Self.init(json) else {
+			throw JSON.Error.deserilize(from: json, to: Self.self)
+		}
+		self = value
+	}
 }
 
 public extension JSONDeserializable
@@ -196,7 +203,8 @@ public extension JSONMappable {
 		try transform { (pointer, value, index) in
 			if mapper.pointerHashValues.contains(pointer.hashValue) { return }
 			guard let v = type(of: value).init(mapper.json[index]) else {
-					throw JSON.Error.deserilize(from: mapper.json, to: type(of: value))
+					throw json[index].error ??
+						JSON.Error.deserilize(from: mapper.json, to: type(of: value))
 			}
 			type(of: v).code(v, into: pointer)
 		}
@@ -213,7 +221,7 @@ public extension JSONMappable {
 				if let error = json.error { throw error }
 				mapper.json[create: index] = json
 			}
-		} catch let error {
+		} catch {
 				mapper.json = .error(error)
 		}
 	}
@@ -344,7 +352,7 @@ public extension JSON.Mapper {
 		ignore(&any)
 		do {
       any = try json.decode()
-		} catch let error {
+		} catch {
 			json = JSON.error(error)
 		}
 	}

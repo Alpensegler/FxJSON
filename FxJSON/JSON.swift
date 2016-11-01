@@ -137,7 +137,7 @@ public extension JSON {
 			case .encodeToData(wrongObject: let any):
 				return "Wrong object: \(any) encoding to JSON data"
 			case .notExist(dict: let dict, key: let key):
-				return "Subscript \(key) to dict: \(dict) failure"
+				return "Key: \"\(key)\" not exist, dict is: \(dict)"
 			case .wrongType(subscript: let json, key: let key):
 				return "Cannot subscrpit key: \(key) to \(json.debugDescription)"
 			case .outOfBounds(arr: let arr, index: let index):
@@ -223,7 +223,7 @@ public extension JSON {
 		do {
 			let object = try JSONSerialization.jsonObject(with: data, options: options)
 			self.init(any: object)
-		} catch let error {
+		} catch {
 			self.init(JSON.error(JSON.Error.initalize(error)))
 		}
 	}
@@ -246,7 +246,7 @@ public extension JSON {
 			do {
 				let data = try self.data(withOptions: withOptions)
 				return String(data: data, encoding: encoding) ?? "Encode error"
-			} catch let error {
+			} catch {
 				return "\(error)"
 			}
 		case .string(let str):

@@ -64,6 +64,40 @@ class ProtocolTests: XCTestCase {
   }
   
   func testError() {
-    
+		let json: JSON = [
+			"code": 0,
+			"data": [
+				"users": [
+					[
+						"userID": 1,
+						"name": "FrainTest",
+						"admin": true,
+						"website": NSNull(),
+						"signUpTime": "2016-03-04 11:23:30",
+						],
+					[
+						"userID": 3,
+						"name": "Frain",
+						"admin": false,
+						"website": "https://github.com/FrainL",
+						"whatsUp": "buzy",
+						"signUpTime": "2016-06-19 21:31:31"
+					]
+				]
+			]
+		]
+		
+		struct User: JSONMappable {
+			
+			var userID: Int64!
+			var name: String!
+			var admin: Bool = false
+			var whatsUp: String?
+			var website: URL?					//URL 自动转化
+			var signUpTime: Date?			//Date 通过 DateTransform 转化
+			var friends: [User]?			//自己的数据结构也可以转化
+		}
+		
+		print(User(json["data", "users", 0]))
   }
 }
