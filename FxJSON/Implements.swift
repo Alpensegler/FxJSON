@@ -37,11 +37,7 @@ extension JSON : JSONSerializable {
 	}
 	
 	public init(_ object: @autoclosure () throws -> JSONSerializable) {
-		do {
-			try self = object().json
-		} catch {
-			self = .error(error)
-		}
+		do { try self = object().json } catch { self = .error(error) }
 	}
   
 	public init(operate: (Mapper) -> ()) {
@@ -57,8 +53,7 @@ extension JSON : JSONSerializable {
   }
 	
 	public func decode<T : JSONDeserializable>() throws -> T {
-		if let v = T(self) { return v }
-		throw error ?? Error.deserilize(from: self, to: T.self)
+    return try T(throws: self)
 	}
 	
 	public func map<T : JSONDeserializable, U : JSONSerializable>(
@@ -73,114 +68,6 @@ extension JSON : JSONSerializable {
 }
 
 //MARK: - JSONTransformable
-
-extension Array : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard let arr = json.array else { return nil }
-		switch Element.self {
-		case let T as JSONDeserializable.Type:
-			self = arr.flatMap { T.init(JSON(any: $0)) as! Element? }
-		case _ as Any.Type:
-			self = arr as! [Element]
-		default:
-			return nil
-		}
-	}
-	
-	public var json: JSON {
-		return JSON(try JSON.array(self.map { element in
-			guard let element = element as? JSONSerializable else {
-				throw JSON.Error.unSupportType(type: Element.self)
-			}
-			return element.json.object
-		}))
-	}
-}
-
-extension Dictionary : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard let dict = json.dict, Key.self is String.Type else { return nil }
-		switch Value.self {
-		case let T as JSONDeserializable.Type:
-			self = dict.flatMap { ($0.0 as! Key, T.init(JSON(any: $0.1)) as! Value?) }
-		case _ as Any.Type:
-			self = dict.map { ($0.0 as! Key, $0.1 as! Value) }
-		default:
-			return nil
-		}
-	}
-	
-	public var json: JSON {
-		guard Key.self is String.Type else {
-			return .error(JSON.Error.unSupportType(type: Element.self))
-		}
-		return JSON(try JSON.object(self.map { (key, value) in
-			guard let value = value as? JSONSerializable else {
-				throw JSON.Error.unSupportType(type: Element.self)
-			}
-			return (key as! String, value.json.object)
-		}))
-	}
-}
-
-extension Set : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		self.init()
-		guard let T = Element.self as? JSONDeserializable.Type else { return nil }
-		for value in json.asArray {
-			if let value = T.init(value) as! Element? {
-				self.insert(value)
-			}
-		}
-	}
-	
-	public var json: JSON {
-		return JSON(try JSON.array(self.map { element in
-			guard let element = element as? JSONSerializable else {
-				throw JSON.Error.unSupportType(type: Element.self)
-			}
-			return element.json.object
-		}))
-	}
-}
-
-extension ImplicitlyUnwrappedOptional : JSONTransformable {
-	
-	public init?(_ json: JSON) {
-		if let T = Wrapped.self as? JSONDeserializable.Type, let value = T.init(json) {
-			self = .some(value as! Wrapped)
-		} else {
-			return nil
-		}
-	}
-	
-	public var json: JSON {
-		guard Wrapped.self is JSONSerializable.Type else {
-			return .error(JSON.Error.unSupportType(type: Wrapped.self))
-		}
-		if case let .some(v as JSONSerializable) = self { return v.json }
-		return nil
-	}
-}
-
-extension Optional : JSONTransformable {
-	
-	public init?(_ json: JSON) {
-		guard let T = Wrapped.self as? JSONDeserializable.Type else { return nil }
-		self = T.init(json) as! Wrapped?
-	}
-	
-	public var json: JSON {
-		guard Wrapped.self is JSONSerializable.Type else {
-			return .error(JSON.Error.unSupportType(type: Wrapped.self))
-		}
-		if case let .some(v as JSONSerializable) = self { return v.json }
-		return nil
-	}
-}
 
 extension String : JSONTransformable, DefaultInitializable {
 	
@@ -206,18 +93,6 @@ extension Bool : JSONTransformable, DefaultInitializable {
 	}
 }
 
-extension Int : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard case let .number(num) = json else { return nil }
-		self = num.intValue
-	}
-	
-	public var json: JSON {
-		return .number(NSNumber(value: self))
-	}
-}
-
 extension Float : JSONTransformable, DefaultInitializable {
 	
 	public init?(_ json: JSON) {
@@ -240,6 +115,18 @@ extension Double : JSONTransformable, DefaultInitializable {
 	public var json: JSON {
 		return .number(NSNumber(value: self))
 	}
+}
+
+extension Int : JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard case let .number(num) = json else { return nil }
+    self = num.intValue
+  }
+  
+  public var json: JSON {
+    return .number(NSNumber(value: self))
+  }
 }
 
 extension Int8 : JSONTransformable, DefaultInitializable {
@@ -290,7 +177,7 @@ extension Int64 : JSONTransformable, DefaultInitializable {
 	}
 }
 
-extension Date : JSONTransformable, DefaultInitializable {
+extension Date : JSONTransformable {
 	
 	public init?(_ json: JSON) {
 		switch (DateTransform.default, json) {
@@ -334,6 +221,111 @@ extension NSNull : JSONSerializable {
 	public var json: JSON {
 		return JSON()
 	}
+}
+
+extension Optional : JSONTransformable {
+  
+  public init?(_ json: JSON) {
+    guard let T = Wrapped.self as? JSONDeserializable.Type else { return nil }
+    self = T.init(json) as! Wrapped?
+  }
+  
+  public var json: JSON {
+    guard Wrapped.self is JSONSerializable.Type else {
+      return .error(JSON.Error.unSupportType(type: Wrapped.self))
+    }
+    if case let .some(v as JSONSerializable) = self { return v.json }
+    return nil
+  }
+}
+
+extension ImplicitlyUnwrappedOptional : JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard let T = Wrapped.self as? JSONDeserializable.Type else { return nil }
+    self = T.init(json) as! Wrapped?
+  }
+  
+  public var json: JSON {
+    guard Wrapped.self is JSONSerializable.Type else {
+      return .error(JSON.Error.unSupportType(type: Wrapped.self))
+    }
+    if case let .some(v as JSONSerializable) = self { return v.json }
+    return nil
+  }
+}
+
+extension Set : JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    self.init()
+    guard let T = Element.self as? JSONDeserializable.Type else { return nil }
+    for value in json.asArray {
+      if let value = T.init(value) as! Element? {
+        self.insert(value)
+      }
+    }
+  }
+  
+  public var json: JSON {
+    return JSON(try JSON.array(self.map { element in
+      guard let element = element as? JSONSerializable else {
+        throw JSON.Error.unSupportType(type: Element.self)
+      }
+      return element.json.object
+    }))
+  }
+}
+
+extension Array : JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard let arr = json.array else { return nil }
+    switch Element.self {
+    case let T as JSONDeserializable.Type:
+      self = arr.flatMap { T.init(JSON(any: $0)) as! Element? }
+    case _ as Any.Type:
+      self = arr as! [Element]
+    default:
+      return nil
+    }
+  }
+  
+  public var json: JSON {
+    return JSON(try JSON.array(self.map { element in
+      guard let element = element as? JSONSerializable else {
+        throw JSON.Error.unSupportType(type: Element.self)
+      }
+      return element.json.object
+    }))
+  }
+}
+
+extension Dictionary : JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard let dict = json.dict, Key.self is String.Type else { return nil }
+    switch Value.self {
+    case let T as JSONDeserializable.Type:
+      self = dict.flatMap { ($0.0 as! Key, T.init(JSON(any: $0.1)) as! Value?) }
+    case _ as Any.Type:
+      self = dict.map { ($0.0 as! Key, $0.1 as! Value) }
+    default:
+      return nil
+    }
+  }
+  
+  public var json: JSON {
+    guard Key.self is String.Type else {
+      return .error(JSON.Error.unSupportType(type: Element.self))
+    }
+    return JSON(try JSON.object(self.map { (key, value) in
+      guard let value = value as? JSONSerializable else {
+        throw JSON.Error.unSupportType(type: Element.self)
+      }
+      return (key as! String, value.json.object)
+    }))
+  }
 }
 
 //MARK: - Transform

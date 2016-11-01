@@ -40,24 +40,24 @@ class InitTests: XCTestCase {
 	}()
 	
 	func testData() {
-    let json = JSON(data: data)
+    let json = JSON(jsonData: data)
 		XCTAssertEqual(json["web-app"]["servlet"].asArray.count, 5)
-    _ = try! json.data()
+    _ = try! json.jsonData()
 	}
 	
 	func testDataMeasure() {
 		self.measure() {
 			for _ in 1...100 {
-        _ = JSON(data: self.data)
+        _ = JSON(jsonData: self.data)
 			}
 		}
 	}
     
   func testWrongData() {
     let data = Data()
-    guard case JSON.Error.initalize? = JSON(data: data).error else { XCTFail(); return }
+    guard case JSON.Error.initalize? = JSON(jsonData: data).error else { XCTFail(); return }
     let json: JSON = false
-    XCTAssertThrowsError(try json.data()) { (error) in
+    XCTAssertThrowsError(try json.jsonData()) { (error) in
       guard case .encodeToData? = (error as? JSON.Error) else { XCTFail(); return }
     }
   }

@@ -19,8 +19,8 @@ let json: JSON = [
 				"whatsUp": "buzy",
 				"signUpTime": "2016-04-22 21:31:31",
 				"friends": [
-					["userID": 2,"name": "box","admin": false,],
-					["userID": 2,"name": "sky","admin": false,]
+					["userID": 2,"name": "box","admin": false],
+					["userID": 2,"name": "sky","admin": false]
 				]
 			]
 		]
@@ -35,19 +35,23 @@ struct User: JSONMappable {
 	var website: URL?					//URL 自动转化
 	var signUpTime: Date?			//Date 通过 DateTransform 转化
 	var friends: [User]?			//自己的数据结构也可以转化
+//  var lastLoginDate = Date()
 }
 
 extension User {
 	
 	mutating func map(mapper: JSON.Mapper) {
-		whatsUp <> mapper["whatsUp"][CustomTransform<String, String>.fromJSON { "whatsUp: \($0)" }]
-		signUpTime <> mapper["signUpTime"][DateTransform.timeIntervalSince(.year1970)]
+		whatsUp       <> mapper["sign"]
+    signUpTime    << mapper["signUpTime"]
+//    lastLoginDate >> mapper["lastLoginDate"]
+    admin         >< mapper
 	}
 }
 
 do {
-  let user = try User(decode: json["data", "users", 1])
-	dump(user)
+  let user = try User(throws: json["data", "users", 1])
+  print(user)
+  print(user.json)
 } catch {
 	print(error)
 }

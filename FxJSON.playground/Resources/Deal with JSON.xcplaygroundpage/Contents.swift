@@ -54,25 +54,14 @@ let uid = Int(noneNull: json[path]["uid"])
 
 let admin = Bool(json[path]["admin"])
 //:way two: using operator <
-let name = try String(throws: json[path, "name"])
-let user = try [String: Any](throws: json["data", "users", 1])
-
-do {
-  let number = try Int(throws: json["code"])
-} catch let JSON.Error.notExist(dict: dict, key: key) {
-  print(dict, key)
-} catch {
-  print(error)
-}
-
-let nameTwo = try json[path, "name"]< as String
+let name = try json[path].decode() as String
+let user = try json["data", "users", 1]< as [String: Any]
 //: ### Getting date by using DateTF
 
 //:getting date from StringJSON(use "yyyy-MM-dd HH:mm:ss" and defaultTimeZone as default formatter)
 
-//:getting date from NumberJSON(use .since1970 as default formatter)
-//guard let dateThree = NSDate(JSON(0)[DateTF(timeInterval: .year1970)]) else {
-//guard let dateFour = NSDate(JSON(NSTimeIntervalSince1970)[DateTF.init(timeInterval: .referenceDate)]) else { fatalError() }
+////:getting date from NumberJSON(use .since1970 as default formatter)
+//guard let dateThree = NSDate(JSON(0)[DateTF(timeInterval: .year1970)]) else { f//guard let dateFour = NSDate(JSON(NSTimeIntervalSince1970)[DateTF.init(timeInterval: .referenceDate)]) else { fatalError() }
 // fatalError() }
 ////:For those StringJSON you may need some transfrom, simply use map function.
 //let time: JSON = ["time": "2016-08-//

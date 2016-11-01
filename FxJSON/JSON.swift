@@ -218,8 +218,8 @@ extension JSON : ExpressibleByNilLiteral {
 
 public extension JSON {
     
-	init(data: Data?, options: JSONSerialization.ReadingOptions = []) {
-		guard let data = data else { self.init(); return }
+	init(jsonData: Data?, options: JSONSerialization.ReadingOptions = []) {
+		guard let data = jsonData else { self.init(); return }
 		do {
 			let object = try JSONSerialization.jsonObject(with: data, options: options)
 			self.init(any: object)
@@ -229,10 +229,10 @@ public extension JSON {
 	}
 	
 	init(jsonString: String?, options: JSONSerialization.ReadingOptions = []) {
-		self.init(data: jsonString?.data(using: String.Encoding.utf8), options: options)
+		self.init(jsonData: jsonString?.data(using: String.Encoding.utf8), options: options)
 	}
 	
-	func data(withOptions: JSONSerialization.WritingOptions = []) throws -> Data {
+	func jsonData(withOptions: JSONSerialization.WritingOptions = []) throws -> Data {
 		guard JSONSerialization.isValidJSONObject(object) else {
 			throw error ?? Error.encodeToData(wrongObject: object)
 		}
@@ -244,7 +244,7 @@ public extension JSON {
 		switch self {
 		case .object, .array:
 			do {
-				let data = try self.data(withOptions: withOptions)
+				let data = try self.jsonData(withOptions: withOptions)
 				return String(data: data, encoding: encoding) ?? "Encode error"
 			} catch {
 				return "\(error)"

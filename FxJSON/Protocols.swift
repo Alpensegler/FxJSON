@@ -39,8 +39,8 @@ public protocol JSONSerializable {
 
 public extension JSONSerializable {
 	
-	func data(withOptions: JSONSerialization.WritingOptions = []) throws -> Data {
-		return try json.data(withOptions: withOptions)
+	func jsonData(withOptions: JSONSerialization.WritingOptions = []) throws -> Data {
+		return try json.jsonData(withOptions: withOptions)
 	}
   
   func jsonString(withOptions: JSONSerialization.WritingOptions = [],
@@ -61,24 +61,26 @@ public extension JSONSerializable
 
 public protocol JSONDeserializable {
 	
-    init?(_ json: JSON)
+  init?(_ json: JSON)
+  
+  init(throws json: JSON) throws
 }
 
 public extension JSONDeserializable {
 	
-	init?(data: Data?, options: JSONSerialization.ReadingOptions = []) {
-		let json = JSON.init(data: data, options: options)
-		self.init(json)
+	init(jsonData: Data?, options: JSONSerialization.ReadingOptions = []) throws {
+		let json = JSON.init(jsonData: jsonData, options: options)
+    self = try Self.init(throws: json)
 	}
     
-	init?(jsonString: String?, options: JSONSerialization.ReadingOptions = []) {
+	init(jsonString: String?, options: JSONSerialization.ReadingOptions = []) throws {
     let json = JSON.init(jsonString: jsonString, options: options)
-    self.init(json)
+    self = try Self.init(throws: json)
 	}
 	
-	init(decode json: JSON) throws {
+	init(throws json: JSON) throws {
 		guard let value = Self.init(json) else {
-			throw JSON.Error.deserilize(from: json, to: Self.self)
+			throw json.error ?? JSON.Error.deserilize(from: json, to: Self.self)
 		}
 		self = value
 	}
@@ -124,8 +126,8 @@ extension JSONDeserializable where Self: JSONSerializable {
 	}
 	
 	static func code(_ value: JSONDeserializable, into pointer: Pointer) {
-		pointer.withMemoryRebound(to: Self.self, capacity: 1, { $0 })
-		.pointee = value as! Self
+		pointer.withMemoryRebound(to: Self.self, capacity: 1) { $0 }
+      .pointee = value as! Self
 	}
 }
 
@@ -157,6 +159,10 @@ public extension JSONDecodable {
 		guard let value = try? Self.init(decode: json) else { return nil }
 		self = value
 	}
+  
+  init(throws json: JSON) throws {
+    self = try Self.init(decode: json)
+  }
 }
 
 //MARK: - JSONEncodable
@@ -204,7 +210,7 @@ public extension JSONMappable {
 			if mapper.pointerHashValues.contains(pointer.hashValue) { return }
 			guard let v = type(of: value).init(mapper.json[index]) else {
 					throw json[index].error ??
-						JSON.Error.deserilize(from: mapper.json, to: type(of: value))
+						JSON.Error.deserilize(from: mapper.json[index], to: type(of: value))
 			}
 			type(of: v).code(v, into: pointer)
 		}
@@ -344,12 +350,14 @@ public extension JSON.Mapper {
 	}
     
 	func serialize<T : JSONSerializable>(from any: inout T) {
-		ignore(&any)
+    ignore(&any)
+    guard isCreating else { getJSON = []; return }
     json = any.json
 	}
     
 	func desrialize<T : JSONDeserializable>(to any: inout T) {
 		ignore(&any)
+    guard !isCreating else { getJSON = []; setJSON = []; return }
 		do {
       any = try json.decode()
 		} catch {
