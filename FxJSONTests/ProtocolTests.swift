@@ -32,7 +32,7 @@ class ProtocolTests: XCTestCase {
     
   func testCodable() {
     
-    struct A: JSONDecodable, JSONEncodeable {
+    struct A: JSONDecodable, JSONEncodable {
       
       let name: String
       let age: Int
@@ -51,7 +51,7 @@ class ProtocolTests: XCTestCase {
     }
     
     let json = ["name": "name", "age": 10, "gender": 0] as JSON
-    guard let a = A(json) else { XCTFail(); return }
+    guard let a = A.init(json) else { XCTFail(); return }
     XCTAssertEqual(a.age, 10)
     XCTAssertEqual(a.name, "name")
     XCTAssertEqual(a.gender.rawValue, A.Gender.boy.rawValue)

@@ -39,13 +39,13 @@ public protocol JSONSerializable {
 
 public extension JSONSerializable {
 	
-	func jsonData(withOptions: JSONSerialization.WritingOptions = []) throws -> Data {
-		return try json.jsonData(withOptions: withOptions)
+	func jsonData(withOptions opt: JSONSerialization.WritingOptions = []) throws -> Data {
+		return try json.jsonData(withOptions: opt)
 	}
   
-  func jsonString(withOptions: JSONSerialization.WritingOptions = [],
-                  encoding: String.Encoding = String.Encoding.utf8) -> String {
-		return json.jsonString(withOptions: withOptions, encoding: encoding)
+  func jsonString(withOptions opt: JSONSerialization.WritingOptions = [],
+                  encoding ecd: String.Encoding = String.Encoding.utf8) -> String {
+		return json.jsonString(withOptions: opt, encoding: ecd)
 	}
 }
 
@@ -167,12 +167,12 @@ public extension JSONDecodable {
 
 //MARK: - JSONEncodable
 
-public protocol JSONEncodeable : JSONSerializable {
+public protocol JSONEncodable : JSONSerializable {
 	
 	func encode(mapper: JSON.Mapper)
 }
 
-public extension JSONEncodeable {
+public extension JSONEncodable {
 	
 	func encode(mapper: JSON.Mapper) {
 		let children = Mirror(reflecting: self).children
@@ -190,9 +190,13 @@ public extension JSONEncodeable {
 	}
 }
 
+//MARK: - JSONCodeable
+
+public typealias JSONCodable = JSONEncodable & JSONDecodable
+
 //MARK: - JSONMappable
 
-public protocol JSONMappable: DefaultInitializable, JSONDecodable, JSONEncodeable {
+public protocol JSONMappable: DefaultInitializable, JSONEncodable, JSONDecodable {
 	
 	mutating func map(mapper: JSON.Mapper)
 }
@@ -205,13 +209,10 @@ public extension JSONMappable {
 		self.init()
 		let mapper = JSON.Mapper(json: json, isCreating: false)
 		self.map(mapper: mapper)
-		if let error = mapper.json.error { throw error }
+		if let error = mapper._json.error { throw error }
 		try transform { (pointer, value, index) in
 			if mapper.pointerHashValues.contains(pointer.hashValue) { return }
-			guard let v = type(of: value).init(mapper.json[index]) else {
-					throw json[index].error ??
-						JSON.Error.deserilize(from: mapper.json[index], to: type(of: value))
-			}
+      let v = try type(of: value).init(throws: mapper._json[index])
 			type(of: v).code(v, into: pointer)
 		}
 	}
@@ -225,10 +226,10 @@ public extension JSONMappable {
 				if mapper.pointerHashValues.contains(pointer.hashValue) { return }
 				let json = value.json
 				if let error = json.error { throw error }
-				mapper.json[create: index] = json
+				mapper._json[create: index] = json
 			}
 		} catch {
-				mapper.json = .error(error)
+				mapper._json = .error(error)
 		}
 	}
 }
@@ -318,7 +319,7 @@ public extension JSON {
       }
     }
 		
-		private var _json: JSON
+		fileprivate var _json: JSON
 		
 		let isCreating: Bool
     
@@ -346,7 +347,7 @@ public extension JSON {
 public extension JSON.Mapper {
   
 	func ignore<T>(_ any: inout T) {
-		pointerHashValues.insert(withUnsafePointer(to: &any, { $0 }).hashValue)
+		pointerHashValues.insert(withUnsafePointer(to: &any) { $0 }.hashValue)
 	}
     
 	func serialize<T : JSONSerializable>(from any: inout T) {
@@ -361,7 +362,7 @@ public extension JSON.Mapper {
 		do {
       any = try json.decode()
 		} catch {
-			json = JSON.error(error)
+			_json = JSON.error(error)
 		}
 	}
 	
@@ -371,7 +372,7 @@ public extension JSON.Mapper {
 	
 	subscript(noneNull path: JSON.Index...) -> JSON.Mapper {
 		get {
-      guard isCreating else { getJSON.append { $0[noneNull: path] }; return self }
+      guard isCreating else { getJSON.append { $0[path] }; return self }
       getJSON.append { $0[noneNull: path] }
       setJSON.append { value in { (json: inout JSON) in json[noneNull: path] = value } }
 			return self

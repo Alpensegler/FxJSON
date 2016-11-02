@@ -23,7 +23,7 @@ struct User: JSONDecodable {
   }
 }
 
-extension User: JSONEncodeable { }
+extension User: JSONEncodable { }
 
 extension User {
   

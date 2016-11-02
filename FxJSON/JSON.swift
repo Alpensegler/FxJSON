@@ -118,7 +118,7 @@ public extension JSON {
     
 	enum Error: Swift.Error, CustomStringConvertible {
 		
-		case initalize(Swift.Error)
+    case initalize(error: Swift.Error)
 		case unSupportType(type: Any.Type)
 		case encodeToData(wrongObject: Any)
 		case notExist(dict: [String: Any], key: String)
@@ -224,7 +224,7 @@ public extension JSON {
 			let object = try JSONSerialization.jsonObject(with: data, options: options)
 			self.init(any: object)
 		} catch {
-			self.init(JSON.error(JSON.Error.initalize(error)))
+			self.init(JSON.error(JSON.Error.initalize(error: error)))
 		}
 	}
 	
@@ -232,29 +232,29 @@ public extension JSON {
 		self.init(jsonData: jsonString?.data(using: String.Encoding.utf8), options: options)
 	}
 	
-	func jsonData(withOptions: JSONSerialization.WritingOptions = []) throws -> Data {
+	func jsonData(withOptions opt: JSONSerialization.WritingOptions = []) throws -> Data {
 		guard JSONSerialization.isValidJSONObject(object) else {
 			throw error ?? Error.encodeToData(wrongObject: object)
 		}
-		return try JSONSerialization.data(withJSONObject: object, options: withOptions)
+		return try JSONSerialization.data(withJSONObject: object, options: opt)
 	}
     
-	func jsonString(withOptions: JSONSerialization.WritingOptions = [],
-                  encoding: String.Encoding = String.Encoding.utf8) -> String {
+	func jsonString(withOptions opt: JSONSerialization.WritingOptions = [],
+                  encoding ecd: String.Encoding = String.Encoding.utf8) -> String {
 		switch self {
 		case .object, .array:
 			do {
-				let data = try self.jsonData(withOptions: withOptions)
-				return String(data: data, encoding: encoding) ?? "Encode error"
+				let data = try self.jsonData(withOptions: opt)
+				return String(data: data, encoding: ecd) ?? "Encode error"
 			} catch {
 				return "\(error)"
 			}
-		case .string(let str):
-			return "\"\(str)\""
-		case .number(let num):
-			return num.description
-		case .bool(let boo):
-			return boo.description
+		case .string(let string):
+			return "\"\(string)\""
+		case .number(let number):
+			return number.description
+		case .bool(let bool):
+			return bool.description
 		case .error(let error):
 			return "\(error)"
 		case .null:
