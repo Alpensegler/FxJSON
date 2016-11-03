@@ -292,12 +292,12 @@ extension Array : JSONTransformable, DefaultInitializable {
   }
   
   public var json: JSON {
-    return JSON(try JSON.array(self.map { element in
-      guard let element = element as? JSONSerializable else {
-        throw JSON.Error.unSupportType(type: Element.self)
+    return JSON.array(self.map { element in
+      if let element = element as? JSONSerializable {
+        return element.json.object
       }
-      return element.json.object
-    }))
+      return element as Any
+    })
   }
 }
 
@@ -319,12 +319,12 @@ extension Dictionary : JSONTransformable, DefaultInitializable {
     guard Key.self is String.Type else {
       return .error(JSON.Error.unSupportType(type: Element.self))
     }
-    return JSON(try JSON.object(self.map { (key, value) in
-      guard let value = value as? JSONSerializable else {
-        throw JSON.Error.unSupportType(type: Element.self)
+    return JSON.object(self.map { (key, value) in
+      if let value = value as? JSONSerializable {
+        return (key as! String, value.json.object)
       }
-      return (key as! String, value.json.object)
-    }))
+      return (key as! String, value as Any)
+    })
   }
 }
 
@@ -386,8 +386,7 @@ public enum DateTransform: Transform {
 	case timeIntervalSince(Since)
 	
 	public static var `default`: DateTransform = {
-		$0.dateFormat = "yyyy-MM-dd HH:mm:ss"
-		$0.timeZone = TimeZone.current
+		$0.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
 		return .formatter($0)
 	}(DateFormatter())
 	

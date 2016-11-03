@@ -35,7 +35,7 @@ struct User: JSONMappable {
 	var website: URL?					//URL 自动转化
 	var signUpTime: Date?			//Date 通过 DateTransform 转化
 	var friends: [User]?			//自己的数据结构也可以转化
-//  var lastLoginDate = Date()
+  var lastLoginDate = Date()
 }
 
 extension User {
@@ -43,7 +43,7 @@ extension User {
 	mutating func map(mapper: JSON.Mapper) {
 		whatsUp       <> mapper["sign"]
     signUpTime    << mapper["signUpTime"]
-//    lastLoginDate >> mapper["lastLoginDate"]
+    lastLoginDate >> mapper["lastLoginDate"]
     admin         >< mapper
 	}
 }

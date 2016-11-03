@@ -5,16 +5,16 @@
 - [x] [快速](#它很快)
 
 
-- [x] [JSON 和自定义数据结构**互相**转化](#FxJSON-能很轻易地将-JSON-和自定义结构互相转化，只需一个方法)
+- [x] [JSON 和自定义类型互相转化](#FxJSON-能很轻易地将-JSON-和自定义结构互相转化，只需一个方法)
 
 
-- [x] [自定义转化方式](#4.-TransformType)
+- [x] [Date 转换和自定义转换方式](#4.-TransformType)
 
 
-- [x] [错误处理](#3.-错误处理)
+- [x] [Swifty 的错误处理](#3.-错误处理)
 
 
-- [x] [多类型支持](#4.-类型支持)
+- [x] [所有常见类型支持](#4.-类型支持)
 - [x] [全面而灵活，面向协议]()
 
 
@@ -39,11 +39,11 @@
 
 #### 它很优雅
 
-[所有支持的类型]()你都可以通过下面这种方式来从 JSON 转换（包括你自定义的类型，见此处）：
+[所有支持的类型]()你都可以通过下面这种方式来从 JSON 转换（包括你自定义的类型，见下文）：
 
 ```swift
-let json = JSON(jsonData: someDataFromNet) 			// could be Optional
-let json = JSON(jsonString: someJSONStringFromNet)	// could be Optional
+let json = JSON(jsonData: jsonData) 		// Data?
+let json = JSON(jsonString: jsonString)		// String?
 if let numbers = [Int](json["data", "numbers"]) {
   // do some thing with numbers
 }
@@ -73,7 +73,7 @@ do {
 
 ```swift
 let json = ["key": 123].json
-let data = try [123, 456, 789].jsonData()
+let jsondata = try [123, 456, 789].jsonData()
 let jsonString = try user.jsonString()
 ```
 
@@ -181,11 +181,28 @@ extension User {
 }
 ```
 
-
-
 ## Installation
 
+#### CocoaPods
 
+You can use [CocoaPods](http://cocoapods.org/) to install FxJSON by adding it to your `Podfile`:
+
+```
+platform :ios, '8.0'
+use_frameworks!
+
+target 'MyApp' do
+    pod 'FxJSON'
+end
+```
+
+#### Carthage 
+
+You can use [Carthage](https://github.com/Carthage/Carthage) to install FxJSON by adding it to your `Cartfile`:
+
+```
+github "FrainL/FxJSON"
+```
 
 ## Usage
 
@@ -195,8 +212,7 @@ extension User {
    2. [获取数据]()
    3. [转换]()
    4. [JSON as MutableCollection]()
-   5. [错误处理]()
-   6. [创建 JSON]()
+   5. [创建 JSON]()
 3. [使用 Protocol]()
 
 ### 1. 使用 playground 查看
@@ -212,26 +228,26 @@ extension User {
 ```swift
 let json = JSON(typeThatSupported)
 let json = JSON(any: any)					//Any
-let json = JSON(jsonData: data)				//Data(could be optional)
-let json = JSON(jsonString: jsonString)		//String
+let json = JSON(jsonData: data)				//Data?
+let json = JSON(jsonString: jsonString)		//String?
 ```
 
-或者任何自带或使用 protocol 支持的类型都可以直接使用 `some.json` 获取。详见[类型支持](#4.-类型支持)。
+或者任何自带或使用 protocol 支持的自定义类型都可以直接使用 `some.json` 获取。详见[类型支持](#4.-类型支持)。
 
 #### 2. 获取数据
 
 FxJSON 支持地址式的下标。
 
 ```swift
-json["data"]["users"]
+json["code"]
 json["data", "users", 0]
 
-let path: JSON.Index = ["data", "users", 0]
+let path: JSON.Index = ["data", "users", 1]
 json[path]
 json[path, "name"]
 ```
 
-使用 `Any(json)` 的形式可以获取 optional 数据。
+使用 `SupportedType(json)` 的形式可以获取 optional 数据。
 
 ```swift
 if let code = Int(json["code"]) {
@@ -240,56 +256,86 @@ if let code = Int(json["code"]) {
 let website = URL(json[path]["website"])
 ```
 
-使用 `Any(noneNull: json)` 的形式可以获取非 optional 数据。详见[类型支持](#4.-类型支持)。
+使用 `SupportedType(noneNull: json)` 的形式可以获取非 optional 数据。
 
 ```swift
-let uid = Int(noneNull: json[path]["uid"])
+let userID = Int(noneNull: json[path]["userID"])
 ```
 
-还可以使用 `[Any](json)` 或者`[String : Any](json)` 的形式获取数据（同样为optional）。
+使用 `SupportedType(throws: json)`  的形式的初始化带有错误处理。
 
 ```swift
-let codes = [Int](json)
-```
+let name = try String(throws: json[path, "name"])
 
-### 3. 转换
-
-
-
-### 4. 错误处理
-
-FxJSON 有着非常 Swifty 的错误处理方式，见[Errors]()
-
-```swift
-if let num = Int(json[0]) {
-	// do something
-} else {
-	// do something with error
-	json[0].error?.localizedDescription		//"Array[0] failure, its not an array"
-	print(json.type)						//"Object\n"
-}
-```
-
-不管是数组越界，类型转化都有错误处理手段：
-
-```swift
 do {
-	let num: Int = try json["data"]<
-} catch {
-	print(error)
+  let number = try Int(throws: json["notExist"])
+} catch let JSON.Error.notExist(dict: dict, key: key) {
+  print(key, dict)
 }
 ```
 
-### 4. For-in
+`[SupportedType]` 、`[Any]`、`[String: SupportedType]`、 `[String: Any]` 同样也是支持的类型。
+
+```swift
+let friends = [[String: Any]](json[path, "friends"])
+```
+
+### 3. fot-in
+
+`JSON` 是一个 `MutableCollection` ，它能使用所有 `MutableCollection` 的方法，比如 `isEmpty` 、`count` 等等都能使用。
+
+在使用 for-in 的时候，无论 `JSON` 是 `.array` 还是 `.object`，`Element` 都是 `JSON`  类型。
+
+```swift
+for subJSON in json {
+  //do some thing
+}
+```
+
+特别的，如果有需要，可以用 `.asDic` 和 `asArray` 来使用 for-in。（因为使用了 `LazyMapCollection` ，使用这两者会比直接使用 for-in 性能更好）
 
 ```swift
 // If JSON is an object
-for (key, v) in json.asDic {
-	// do something
+for (key, subJSON) in json.asDic { 
+  // do something
 }
 // If JSON is an array
-for v in json.asArray {
-	// do something
+for subJSON in json.asArray {
+  // do something
+}
+```
+
+### 4. 转换
+
+通过设置 `DateTransform.default` 来更改 `Date` 的默认的转换方式。
+
+```swift
+let formatter = DateFormatter()
+formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+DateTransform.default = DateTransform.formatter(formatter)
+```
+
+`Date` 可以通过 `DateTransform` 进行转换。（默认格式化器为 "yyyy-MM-dd'T'HH:mm:ssZ" ）
+
+```swift
+let signUpTime = Date(json[path, "signUpTime"])
+let date = Date(JSON(NSTimeIntervalSince1970)[DateTransform.timeIntervalSince(.year1970)])
+```
+
+你可以你还可以通过 `CustomTransform` 来自定义转换方式，可以选用 `.toJSON` , `.fromJSON` 或 `.both` 来定义需要的转换方式（使用  `throw` 以便进行错误处理）：
+
+```swift
+let from = CustomTransform<String, Int>.fromJSON {
+  if let number = Int($0) { return number }
+  throw JSON.Error.customTransfrom(source: $0)
+}
+let to = CustomTransform<String, Int>.toJSON { "\($0)" }
+let code = Int(json["code"][from])
+
+do {
+  let code = try Int(throws: json[path, "name"][from])
+} catch let JSON.Error.customTransfrom(source: any) {
+  any
 }
 ```
 
@@ -298,26 +344,26 @@ for v in json.asArray {
 FxJSON 能提供目前为止最为便捷的创造 JSON 的方式，使用 Literal：
 
 ```swift
-let json: JSON = [
-	"uid": uid,
+let userJSON = [
+	"userID": userID,
 	"name": name,
 	"admin": admin
-]
+] as JSON
 ```
 
 使用操作符 `<<` ：
 
 ```swift
-var json = JSON {
-	code	>> $0["code"]
-	user	>> $0["data", "users", 1]
-}
-
-json.transfrom {
-	userJSON	>> $0[path]
-	()			>> $0[noneNull: path, "signature"]
-	website		>> $0[path, "website"]
-	dateOne		>> $0[path, "signUpTime"][DateTF()]
+let createJSON = JSON {
+	$0["code"][to] 				<< code
+	$0["data", "users", 0] 		<< user
+	$0[path] << JSON {
+		$0 						<< userJSON
+		$0[noneNull: "whatsUp"] << whatsUp
+		$0["website"]			<< website
+		$0["signUpTime"] 		<< signUpTime
+		$0["friends"] 			<< friends
+	}
 }
 ```
 
@@ -325,9 +371,11 @@ json.transfrom {
 
 #### 1. JSONDecodable 
 
-#### 2. JSONEncodable
+#### 2. JSONEncodable 
 
 #### 3. JSONMappable
+
+#### 4. JSONConvertable、JSONTransformable
 
 ## References
 

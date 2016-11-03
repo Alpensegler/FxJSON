@@ -190,7 +190,7 @@ public extension JSONEncodable {
 	}
 }
 
-//MARK: - JSONCodeable
+//MARK: - JSONCodable
 
 public typealias JSONCodable = JSONEncodable & JSONDecodable
 
