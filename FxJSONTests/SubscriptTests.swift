@@ -113,10 +113,17 @@ class SubscriptTests: XCTestCase {
     let date = Date(timeIntervalSince1970: NSTimeIntervalSince1970)
 		XCTAssertEqual(Date(json["t3"][DateTransform.timeIntervalSince(.date(date))]),
 		               Date(timeIntervalSinceReferenceDate: NSTimeIntervalSince1970))
+    
+    let `default` = DateTransform.default
+    defer { DateTransform.default = `default` }
+    
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+    DateTransform.default = .formatter(formatter)
+    
 		XCTAssertEqual(Date(json["t4"]),
 		               Date(timeIntervalSinceReferenceDate: 0))
-        
-    let formatter = DateFormatter()
+    
     formatter.dateFormat = "yyyy-MM-dd"
     
     guard case JSON.Error.formatter? = json["t4"][DateTransform.formatter(formatter)].error else { XCTFail(); return }
@@ -124,9 +131,6 @@ class SubscriptTests: XCTestCase {
 		json["t5"] = 978307200.0
     json["t6"][DateTransform.formatter(formatter)] = Date(
     timeIntervalSinceReferenceDate: 0).json
-    
-    let `default` = DateTransform.default
-    defer { DateTransform.default = `default` }
     DateTransform.default = DateTransform.timeIntervalSince(.year1970)
     
 		XCTAssertEqual(Date(json["t5"]),
@@ -185,7 +189,9 @@ class SubscriptTests: XCTestCase {
     createJson[create: "t1"] = 0
     createJson[create: "t2"] = (NSTimeIntervalSince1970 * -1).json
     createJson[create: "t3"] = NSTimeIntervalSince1970.json
-    createJson[create: "t4"][DateTransform.default] = Date(timeIntervalSinceReferenceDate: 0).json
+    createJson[create: "t4"][DateTransform.formatter(
+      { $0.dateFormat = "yyyy-MM-dd HH:mm:ss"; return $0 }(DateFormatter()))
+      ] = Date(timeIntervalSinceReferenceDate: 0).json
     createJson[create: "one"] = 1
 		
 		XCTAssertEqual(json, createJson)

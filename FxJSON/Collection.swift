@@ -134,7 +134,7 @@ public extension JSON {
 
 extension JSON {
 	
-	subscript(noneNull path: [JSON.Index]) -> JSON {
+	subscript(nonNull path: [JSON.Index]) -> JSON {
 		get {
 			return self[create: path]
 		}

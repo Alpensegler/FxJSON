@@ -49,7 +49,7 @@ class MapperTests: XCTestCase {
           "str3": "日本語も同じです😝"
         ]
         $0["null"] << NSNull()
-        $0[noneNull: "noneNull"] << NSNull()
+        $0[nonNull: "nonNil"] << NSNull()
         $0["true"] << true
         $0["false"] << false
         $0["dic"] << JSON {
@@ -62,7 +62,10 @@ class MapperTests: XCTestCase {
         << Date(timeIntervalSince1970: 0)
       $0["t3"][DateTransform.timeIntervalSince(.date(date))]
         << Date(timeIntervalSinceReferenceDate: NSTimeIntervalSince1970)
-      $0["t4"] << Date(timeIntervalSinceReferenceDate: 0)
+      $0["t4"][DateTransform.formatter(
+          { $0.dateFormat = "yyyy-MM-dd HH:mm:ss"; return $0 }(DateFormatter()))
+        ]
+        << Date(timeIntervalSinceReferenceDate: 0)
       $0["one"][CustomTransform<Int, String>.toJSON { Int($0)! }] << "1"
 		}
 	

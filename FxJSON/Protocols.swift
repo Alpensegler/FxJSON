@@ -104,7 +104,7 @@ public protocol DefaultInitializable {
 
 public extension JSONDeserializable where Self: DefaultInitializable {
 	
-	init(noneNull json: JSON) {
+	init(nonNil json: JSON) {
 		self = Self.init(json) ?? Self.init()
 	}
 }
@@ -178,10 +178,10 @@ public extension JSONEncodable {
 		let children = Mirror(reflecting: self).children
 		for (key, value) in children {
       guard let key = key, let serializable = value as? JSONSerializable else {
-        mapper.json = .error(JSON.Error.unSupportType(type: type(of: value)))
+        mapper._json = .error(JSON.Error.unSupportType(type: type(of: value)))
         return
       }
-			mapper.json[create: .key(.key(key))] = serializable.json
+			mapper._json[create: .key(.key(key))] = serializable.json
 		}
 	}
   
@@ -352,13 +352,13 @@ public extension JSON.Mapper {
     
 	func serialize<T : JSONSerializable>(from any: inout T) {
     ignore(&any)
-    guard isCreating else { getJSON = []; return }
+    guard isCreating else { getJSON.removeAll(); return }
     json = any.json
 	}
     
 	func desrialize<T : JSONDeserializable>(to any: inout T) {
 		ignore(&any)
-    guard !isCreating else { getJSON = []; setJSON = []; return }
+    guard !isCreating else { getJSON.removeAll(); setJSON.removeAll(); return }
 		do {
       any = try json.decode()
 		} catch {
@@ -370,11 +370,11 @@ public extension JSON.Mapper {
 		isCreating ? serialize(from: &any) : desrialize(to: &any)
 	}
 	
-	subscript(noneNull path: JSON.Index...) -> JSON.Mapper {
+	subscript(nonNull path: JSON.Index...) -> JSON.Mapper {
 		get {
       guard isCreating else { getJSON.append { $0[path] }; return self }
-      getJSON.append { $0[noneNull: path] }
-      setJSON.append { value in { (json: inout JSON) in json[noneNull: path] = value } }
+      getJSON.append { $0[nonNull: path] }
+      setJSON.append { value in { (json: inout JSON) in json[nonNull: path] = value } }
 			return self
 		}
 	}

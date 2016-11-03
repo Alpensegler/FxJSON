@@ -57,11 +57,11 @@ struct Struct {
 	let optionalDictionary: [String: Any]?
 	
 	init(json: JSON) {
-		string = String(noneNull: json["string"])
-		int = Int(noneNull: json["int"])
-		double = Double(noneNull: json["double"])
-		float = Float(noneNull: json["float"])
-		bool = Bool(noneNull: json["bool"])
+		string = String(nonNil: json["string"])
+		int = Int(nonNil: json["int"])
+		double = Double(nonNil: json["double"])
+		float = Float(nonNil: json["float"])
+		bool = Bool(nonNil: json["bool"])
 		array = json["array"].array ?? []
     dictionary = json["dictionary"].dict ?? [:]
 		optionalFloat = Float(json["optionalFloat"])

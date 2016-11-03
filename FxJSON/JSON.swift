@@ -118,7 +118,7 @@ public extension JSON {
     
 	enum Error: Swift.Error, CustomStringConvertible {
 		
-    case initalize(error: Swift.Error)
+		case initalize(error: Swift.Error)
 		case unSupportType(type: Any.Type)
 		case encodeToData(wrongObject: Any)
 		case notExist(dict: [String: Any], key: String)

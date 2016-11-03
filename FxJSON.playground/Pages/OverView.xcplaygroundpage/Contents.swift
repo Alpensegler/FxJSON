@@ -40,18 +40,16 @@ struct User: JSONMappable {
 
 extension User {
 	
-	mutating func map(mapper: JSON.Mapper) {
+  mutating func map(mapper: JSON.Mapper) {
+    admin         >< mapper
 		whatsUp       <> mapper["sign"]
     signUpTime    << mapper["signUpTime"]
     lastLoginDate >> mapper["lastLoginDate"]
-    admin         >< mapper
 	}
 }
 
 do {
   let user = try User(throws: json["data", "users", 1])
-  print(user)
-  print(user.json)
 } catch {
 	print(error)
 }

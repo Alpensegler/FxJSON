@@ -103,7 +103,7 @@ class ProtocolTests: XCTestCase {
       
       mutating func map(mapper: JSON.Mapper) {
         admin         >< mapper
-        whatsUp       <> mapper[noneNull: "whatsUp"]
+        whatsUp       <> mapper[nonNull: "whatsUp"]
         signUpTime    << mapper["signUpTime"]
         lastLoginDate >> mapper["lastLoginDate"]
       }

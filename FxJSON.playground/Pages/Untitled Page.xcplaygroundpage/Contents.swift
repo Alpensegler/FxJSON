@@ -33,7 +33,3 @@ extension User {
     mapper["signUpTime"] << signUpTime
   }
 }
-
-if Int.self is Any.Type {
-	print(true)
-}
