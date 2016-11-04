@@ -8,6 +8,7 @@
 */
 import FxJSON
 import Foundation
+import UIKit
 /*:
 Assume that you have a json data like this:
 */
@@ -115,15 +116,48 @@ class Basic: JSONMappable {
   var signUpTime: Date?
   
   required init() {}
+	
+	func map(mapper: JSON.Mapper) { }
 }
 
 Basic(json["data", "users", 0])?.json
 
-class User: Basic {
+class User : Basic {
   var website: URL?
-  var friends: [Basic] = []
-  
-  func map(mapper: JSON.Mapper) {
-    
+	var friends: [Basic]?
+	var lastLoginTime = Date()
+	
+  override func map(mapper: JSON.Mapper) {
+    admin					>< mapper
+		website				<> mapper["website"]
+		lastLoginTime	>> mapper["lastLoginTime"]
+		signUpTime		<> mapper["signUpTime"][DateTransform.default]
   }
 }
+
+do {
+	let user = try User(throws: json["data", "users", 1])
+} catch {
+	print(error)
+}
+
+//: ## 3.  JSONConvertable、JSONTransformable
+
+extension UIColor : JSONConvertable {
+	public static func convert(from json: JSON) -> Self? {
+		guard let hex = Int(json) else { return nil }
+		let r = (CGFloat)((hex >> 16) & 0xFF)
+		let g = (CGFloat)((hex >> 8) & 0xFF)
+		let b = (CGFloat)(hex & 0xFF)
+		return self.init(red: r / 255.0, green: g / 255.0, blue: b / 255.0, alpha: 1)
+	}
+}
+
+let color = UIColor(JSON(0xFF0000))
+
+enum ErrorCode : Int, JSONTransformable {
+	case noError
+	case netWorkError
+}
+
+let errorCode = ErrorCode(json["code"])

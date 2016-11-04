@@ -120,24 +120,6 @@ struct User: JSONDecodable {
 let user = try User(throws: json)
 ```
 
-使用 `JSONConvertable` 来使引用类型支持从 JSON 转化：
-
-```swift
-extension UIColor: JSONConvertable {
-  public static func convert(from json: JSON) -> Self? {
-    guard let hex = Int(json) else { return nil }
-    let r = (CGFloat)((hex >> 16) & 0xFF)
-    let g = (CGFloat)((hex >> 8) & 0xFF)
-    let b = (CGFloat)(hex & 0xFF)
-    return self.init(red: r / 255.0, green: g / 255.0, blue: b / 255.0, alpha: 1)
-  }
-}
-
-if let color = UIColor(json) {
-  //Use color to do something
-}
-```
-
 使用 `JSONEncodable` 来支持转换为 JSON：
 
 ```swift
@@ -376,6 +358,24 @@ let createJSON = JSON {
 #### 3. JSONMappable
 
 #### 4. JSONConvertable、JSONTransformable
+
+使用 `JSONConvertable` 来使引用类型支持从 JSON 转化：
+
+```swift
+extension UIColor: JSONConvertable {
+  public static func convert(from json: JSON) -> Self? {
+    guard let hex = Int(json) else { return nil }
+    let r = (CGFloat)((hex >> 16) & 0xFF)
+    let g = (CGFloat)((hex >> 8) & 0xFF)
+    let b = (CGFloat)(hex & 0xFF)
+    return self.init(red: r / 255.0, green: g / 255.0, blue: b / 255.0, alpha: 1)
+  }
+}
+
+if let color = UIColor(json) {
+  //Use color to do something
+}
+```
 
 ## References
 

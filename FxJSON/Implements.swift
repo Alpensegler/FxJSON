@@ -268,12 +268,14 @@ extension Set : JSONTransformable, DefaultInitializable {
   }
   
   public var json: JSON {
-    return JSON(try JSON.array(self.map { element in
-      guard let element = element as? JSONSerializable else {
-        throw JSON.Error.unSupportType(type: Element.self)
-      }
-      return element.json.object
-    }))
+		return JSON(try JSON.array(self.map { element in
+			if let element = element as? JSONSerializable {
+				let json = element.json
+				if let error = json.error { throw error }
+				return json.object
+			}
+			return element as Any
+		}))
   }
 }
 
@@ -292,12 +294,14 @@ extension Array : JSONTransformable, DefaultInitializable {
   }
   
   public var json: JSON {
-    return JSON.array(self.map { element in
+    return JSON(try JSON.array(self.map { element in
       if let element = element as? JSONSerializable {
-        return element.json.object
+				let json = element.json
+				if let error = json.error { throw error }
+        return json.object
       }
       return element as Any
-    })
+    }))
   }
 }
 
@@ -319,12 +323,14 @@ extension Dictionary : JSONTransformable, DefaultInitializable {
     guard Key.self is String.Type else {
       return .error(JSON.Error.unSupportType(type: Element.self))
     }
-    return JSON.object(self.map { (key, value) in
+    return JSON(try JSON.object(self.map { (key, value) in
       if let value = value as? JSONSerializable {
-        return (key as! String, value.json.object)
+				let json = value.json
+				if let error = json.error { throw error }
+        return (key as! String, json.object)
       }
       return (key as! String, value as Any)
-    })
+    }))
   }
 }
 

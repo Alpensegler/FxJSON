@@ -314,7 +314,6 @@ public extension JSON {
         return getJSON.reduce(_json) { $1($0) }
       }
       set {
-        guard !newValue.isError else { _json = newValue; return }
         setJSON(with: newValue)(&_json)
       }
     }
@@ -338,6 +337,7 @@ public extension JSON {
       return { json in
         var subJSON = get(json)
         self.setJSON(with: value)(&subJSON)
+				if subJSON.isError { json = subJSON; return }
         set(subJSON)(&json)
       }
     }
@@ -353,6 +353,7 @@ public extension JSON.Mapper {
 	func serialize<T : JSONSerializable>(from any: inout T) {
     ignore(&any)
     guard isCreating else { getJSON.removeAll(); return }
+		if _json.isError { return }
     json = any.json
 	}
     
