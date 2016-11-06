@@ -1,29 +1,21 @@
 # Features
 
 - [x] [快速](#它很快)
-
-
-- [x] [JSON 和自定义类型互相转化](#FxJSON-能很轻易地将-JSON-和自定义结构互相转化，只需一个方法)
-- [x] [Playgrounds 示例](#使用-playground-查看：)
-
-
-- [x] [Date 转换和自定义转换方式](#4.-TransformType)
-- [x] [所有常见类型支持](#4.-类型支持)
-- [x] [全面灵活，面向协议]()
-
-
-- [x] [Swifty 的错误处理](#3.-错误处理)
-
-
-- [x] [与多个主流库一同使用]()
-- [x] [支持函数式编程]()
+- [x] [JSON 和自定义类型互相转化](#它韩好用)
+- [x] [Playgrounds 示例](#1-使用-playground-查看)
+- [x] [Date 转换和自定义转换方式](#4-转换)
+- [x] [所有常见类型支持](#1-supported-types)
+- [x] [全面灵活，面向协议](#2-protocols)
+- [x] [Swifty 的错误处理](#3-errors)
+- [x] [与多个主流库一同使用](#extend)
+- [x] [支持函数式编程](#funtional-programming)
 
 
 # Overview
 
 #### 它很快
 
-这里用了和  [JASON](https://github.com/delba/JASON) 相同的 [Benchmarks]()（改成了 Swift 3 的语法），见 [PerformanceTests](https://github.com/FrainL/FxJSON/blob/master/FxJSONTests/PerformanceTests.swift) 。
+这里用了和  [JASON](https://github.com/delba/JASON) 相同的 [benchmarks](https://github.com/delba/JASON/tree/benchmarks)（改成了 Swift 3 的语法），见 [PerformanceTests](https://github.com/FrainL/FxJSON/blob/master/FxJSONTests/PerformanceTests.swift) 。
 
 |            |         100         |        1000        |       10000        |    Δ    |
 | ---------- | :-----------------: | :----------------: | :----------------: | :-----: |
@@ -33,7 +25,7 @@
 
 #### 它很好用
 
-使用  `JSONMappable `协议 ，不用继承自 `NSObject` ，不用必须写一个 `mapping`  函数，FxJSON 默认为你支持从 `JSON` 到该结构的转化，不管是 `Class`（支持[继承]()） 还是 `Struct` （建议你在 [Playgrounds]() 中查看）。
+使用  `JSONMappable `协议 ，不用继承自 `NSObject` ，不用必须写一个 `mapping`  函数，FxJSON 默认为你支持从 `JSON` 到该结构的转化，不管是 `Class`（支持[继承](#2-jsonmappable)） 还是 `Struct` （建议你在 [Playgrounds](#1-使用-playground-查看) 中查看）。
 
 ```swift
 //只需实现 init() 即可默认通过 Mirror 转换
@@ -47,7 +39,7 @@ struct User : JSONMappable {
 }
 ```
 
-或者你也可以用 map 函数自定义一些属性转换方式（可选）。
+或者你也可以用 `map` 函数自定义一些属性转换方式（可选）。
 
 ```swift
 let webTransform = CustomTransform<String, String>.fromJSON { "https://\($0)" }
@@ -64,11 +56,11 @@ extension User {
 }
 ```
 
-除此之外，还有许多其他的 [Protocol]() 来满足属性不可变、enum 默认支持、系统自带类类型支持等需求。
+除此之外，还有许多其他的 [Protocol](#2-protocols) 来满足属性不可变、`enum` 默认支持、系统自带类类型支持等需求。
 
 #### 它很优雅
 
-现在你就可以和[其他支持的类型]()一样通过下面这种方式来从 JSON 转换：
+现在你就可以和[其他支持的类型](#1-supported-types)一样通过下面这种方式来从 `JSON` 转换：
 
 ```swift
 let json = JSON(jsonData: jsonData) 			// Data?
@@ -78,7 +70,7 @@ if let user = User(json["data", "users", 1]) {	// 支持地址式下标
 }
 ```
 
-或者直接从 `Data?` 或 JSON 形式的 `String?` 转换：
+或者直接从 `Data?` 或 `JSON` 形式的 `String?` 转换：
 
 ```swift
 if let dict = try? [String: Any](jsonData: jsonData) {
@@ -86,7 +78,7 @@ if let dict = try? [String: Any](jsonData: jsonData) {
 }
 ```
 
-或者使用带非常 Swifty 的[错误处理]()方式的 `throws` 转换：
+或者使用带非常 Swifty 的[错误处理](#3-errors)方式的 `throws` 转换：
 
 ```swift
 do {
@@ -104,7 +96,7 @@ let jsondata = try [123, 456, 789].jsonData()
 let jsonString = try user.jsonString()
 ```
 
-自定义 JSON 也很简单：
+自定义 `JSON` 也很简单：
 
 ```swift
 let json = ["code": 0, "data": ["users": users]] as JSON
@@ -138,17 +130,17 @@ To use this library in your project manually you may:
 
 ## Usage
 
-1. [使用 Playgrounds 查看]()
-2. [处理 JSON 数据]()
-   1. [初始化]()
-   2. [获取数据]()
-   3. [转换]()
-   4. [JSON as MutableCollection]()
-   5. [创建 JSON]()
-3. [使用 Protocol]()
-   1. [JSONDecodable, JSONEncodable]()
-   2. [JSONMappable]()
-   3. [JSONConvertable, JSONTransformable]()
+1. [使用 Playgrounds 查看](#1-使用-playground-查看)
+2. [处理 JSON 数据](#2-处理-json-数据)
+   1. [初始化](#1-初始化)
+   2. [获取数据](#2-获取数据)
+   3. [fot-in](#3-fot-in)
+   4. [转换](#4-转换)
+   5. [创建 JSON](#5-创造-json)
+3. [使用 Protocol](#3-使用协议)
+   1. [JSONDecodable, JSONEncodable](#1-jsondecodable-jsonencodable)
+   2. [JSONMappable](#2-jsonmappable)
+   3. [JSONConvertable, JSONTransformable](#3-jsonconvertable-jsontransformable)
 
 ### 1. 使用 playground 查看
 
@@ -168,7 +160,7 @@ let json = JSON(jsonData: data)				//Data?
 let json = JSON(jsonString: jsonString)		//String?
 ```
 
-或者任何自带或使用 protocol 支持的自定义类型都可以直接使用 `some.json` 获取。详见[类型支持](#4.-类型支持)。
+或者任何自带或使用 protocol 支持的自定义类型都可以直接使用 `some.json` 获取。详见[类型支持](#1-supported-types)。
 
 #### 2. 获取数据
 
@@ -183,7 +175,7 @@ json[path]
 json[path, "name"]
 ```
 
-使用 `SupportedType(json)` 的形式可以获取 optional 数据。
+使用 `SupportedType(json)` 的形式可以获取 `Optional` 数据。
 
 ```swift
 if let code = Int(json["code"]) {
@@ -192,7 +184,7 @@ if let code = Int(json["code"]) {
 let whatsUp = String(json[path]["whatsUp"])
 ```
 
-使用 `SupportedType(nonNil: json)` 的形式可以获取非 optional 数据。
+使用 `SupportedType(nonNil: json)` 的形式可以获取非 `Optional` 数据，需要类型有默认值，见[类型支持](#1-supported-types)。
 
 ```swift
 let userID = Int(nonNil: json[path, "userID"])
@@ -284,7 +276,7 @@ do {
 
 ### 5. 创造 JSON
 
-FxJSON 能提供目前为止最为便捷的创造 JSON 的方式，使用 Literal：
+FxJSON 能提供目前为止最为便捷的创造 JSON 的方式，使用 literal：
 
 ```swift
 let userJSON: JSON = [
@@ -318,9 +310,9 @@ let createJSON = JSON {
 
 #### 1. JSONDecodable, JSONEncodable 
 
-使用 JSONDecodable 可以将 JSON 数据转化为自定义数据（自定义 `Class` 需要再 init 前加上  `required` ）。
+使用 `JSONDecodable` 可以将 `JSON` 数据转化为自定义数据（自定义 `Class` 需要再 init 前加上  `required` ）。
 
-使用 `<` 后置操作符利用 Swift 的类型匹配调用 `init(throws json: JSON)` 。
+使用 `<` 后置操作符利用类型匹配调用 `init(throws json: JSON)` 。
 
 ```swift
 struct BasicStruct: JSONDecodable {
@@ -357,7 +349,7 @@ class UserClass: BasicClass {
 
 使用 `JSONEncodable` 可以让自定义类型支持转化为 `JSON` （ `Class` 和 `Struct` 都是一样）。
 
-默认通过 `Mirror` 实现。如果你想更加详细地定义，你可以使用 `encode(mapper:)` 。和[创造 JSON]()一样，使用 `<<` 操作符即可：
+默认通过 `Mirror` 实现。如果你想更加详细地定义，你可以使用 `encode(mapper:)` 。和[创造 JSON](#5-创造-json)一样，使用 `<<` 操作符即可：
 
 ```swift
 extension BasicStruct: JSONEncodable {
@@ -432,7 +424,7 @@ class User: Basic {
 
 #### 3. JSONConvertable, JSONTransformable
 
-使用 `JSONConvertable` 来使引用类型支持从 JSON 转化：
+使用 `JSONConvertable` 来使引用类型支持从 `JSON` 转化：
 
 ```swift
 extension UIColor: JSONConvertable {
@@ -448,7 +440,7 @@ extension UIColor: JSONConvertable {
 let color = UIColor(0xFF00FF as JSON)	//purpel color
 ```
 
-使用 `JSONTransformable` 来为 `RawRepresentable` 的类型提供默认支持（`RawValue` 需要是支持的类型）。
+使用 `JSONTransformable` 来为 `RawRepresentable` 的类型提供默认支持（`RawValue` 需要是支持的类型）。
 
 ```swift
 enum ErrorCode: Int, JSONTransformable {
@@ -456,6 +448,7 @@ enum ErrorCode: Int, JSONTransformable {
 	case netWorkError
 }
 ```
+除此之外，剩余的 Protocol 你可以从 References 中的 [Protocols](#2-protocols) 中找到。
 
 ## References
 
@@ -491,7 +484,6 @@ enum ErrorCode: Int, JSONTransformable {
 | JSONConvertable      | static func convert(from json: JSON) -> Self? | JSONDeserializable               | 该协议让引用类型支持从 JSON 转换                      |
 | JSONDecodable        | init(decode json: JSON) throws           | JSONDeserializable               | 该协议让类型支持从 JSON 转换                        |
 | JSONEncodable        | func encode(mapper: JSON.Mapper) // 可选   | JSONSerializable                 | 该协议让类型支持从 JSON 转换                        |
-| JSONCodable          | init(decode json: JSON) throws; func encode(mapper: JSON.Mapper) // 可选 | 无                                | JSONEncodable & JSONDecodable            |
 | JSONMappable         | init(); mutating func map(mapper: JSON.Mapper) // 可选 | DefaultInitializable、JSONCodable | 该协议让自定义类型支持与 JSON 互相转换                   |
 
 #### 3. Errors
@@ -513,14 +505,8 @@ enum ErrorCode: Int, JSONTransformable {
 ### 与 Alamofire 一起使用
 
 ```swift
-Alamofire.request(.GET, url).validate().responseJSON { response in
-  switch response.result {
-  case .Success:
-    let json = JSON(jsonData: response.result.value)
-    print("JSON: \(json)")
-  case .Failure(let error):
-    print(error)
-  }
+Alamofire.request("https://httpbin.org/get").responseJSON { response in
+  let json = JSON(jsonData: response.data)
 }
 ```
 
@@ -540,10 +526,11 @@ struct Model: Object, JSONDecodable {
 
 ## Funtional Programming
 
-`JSON` 类型是一个 Monad 和 Funtor，除了作为 `MutableCollection` 的默认的 `map` 、`flatMap` 方法以外，FxJSON 还这样的 `map` 函数：
+`JSON` 类型是一个 Monad 和 Funtor，除了作为 `MutableCollection` 的默认的 `map` 、`flatMap` 方法以外，FxJSON 还有如下 `map` 和 `flatMap`：
 
 ```swift
-JSON(123).map { (number: Int) -> String in "\($0)" }	//String: "123"
+public func map<T: JSONDeserializable, U: JSONSerializable>(_ transform: (T) throws -> U) rethrows -> JSON { }
+public func flatMap<T: JSONDeserializable>(_ transform: (T) throws -> JSON) rethrows -> JSON { }
 ```
 
 除此之外，使用 `func <<<T : JSONDeserializable>(lhs: JSON, rhs: JSON.Index)` 和 Curry 、 Applicative 配合 `JSONConvertable` ，还可以这样写（保证多少参数编译器都不会报 `Complicate` ）：
