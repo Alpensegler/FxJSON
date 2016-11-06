@@ -31,47 +31,47 @@ import XCTest
 //import JASON
 
 let object = [
-	"string": "string",
-	"int": 42,
-	"double": 42,
-	"float": 42,
-	"bool": true,
-	"array": ["one", "two", "three"],
-	"dictionary": ["string": "string", "int": 42]
-] as [String : Any]
+  "string": "string",
+  "int": 42,
+  "double": 42,
+  "float": 42,
+  "bool": true,
+  "array": ["one", "two", "three"],
+  "dictionary": ["string": "string", "int": 42]
+] as [String: Any]
 
 struct Struct {
-	let string: String
-	let int: Int
-	let double: Double
-	let float: Float
-	let bool: Bool
-	let array: [Any]
+  let string: String
+  let int: Int
+  let double: Double
+  let float: Float
+  let bool: Bool
+  let array: [Any]
   let dictionary: [String: Any]
   let optionalString: String?
-	let optionalFloat: Float?
-	let optionalInt: Int?
-	let optionalDouble: Double?
-	let optionalBool: Bool?
-	let optionalArray: [Any]?
-	let optionalDictionary: [String: Any]?
-	
-	init(json: JSON) {
-		string = String(nonNil: json["string"])
-		int = Int(nonNil: json["int"])
-		double = Double(nonNil: json["double"])
-		float = Float(nonNil: json["float"])
-		bool = Bool(nonNil: json["bool"])
-		array = json["array"].array ?? []
+  let optionalFloat: Float?
+  let optionalInt: Int?
+  let optionalDouble: Double?
+  let optionalBool: Bool?
+  let optionalArray: [Any]?
+  let optionalDictionary: [String: Any]?
+  
+  init(json: JSON) {
+    string = String(nonNil: json["string"])
+    int = Int(nonNil: json["int"])
+    double = Double(nonNil: json["double"])
+    float = Float(nonNil: json["float"])
+    bool = Bool(nonNil: json["bool"])
+    array = json["array"].array ?? []
     dictionary = json["dictionary"].dict ?? [:]
-		optionalFloat = Float(json["optionalFloat"])
-		optionalString = String(json["optionalString"])
-		optionalInt = Int(json["optionalInt"])
-		optionalDouble = Double(json["optionalDouble"])
-		optionalBool = Bool(json["optionalBool"])
-		optionalArray = json["optionalArray"].array
-		optionalDictionary = json["optionalDictionary"].dict
-	}
+    optionalFloat = Float(json["optionalFloat"])
+    optionalString = String(json["optionalString"])
+    optionalInt = Int(json["optionalInt"])
+    optionalDouble = Double(json["optionalDouble"])
+    optionalBool = Bool(json["optionalBool"])
+    optionalArray = json["optionalArray"].array
+    optionalDictionary = json["optionalDictionary"].dict
+  }
   
 //  init(json: SwiftyJSON.JSON) {
 //    string = json["string"].stringValue
@@ -109,30 +109,30 @@ struct Struct {
 }
 
 class BasicPerformanceTests: XCTestCase {
-	
+  
   func test100time() {
-		measure {
-			for _ in 0..<100 {
+    measure {
+      for _ in 0..<100 {
         let _ = Struct(json: JSON(any: object))
-			}
-		}
-	}
-	
-	func test1000time() {
-		measure {
-			for _ in 0..<1000 {
-				let _ = Struct(json: JSON(any: object))
-			}
-		}
-	}
-	
-	func test10000time() {
-		measure {
-			for _ in 0..<10000 {
-				let _ = Struct(json: JSON(any: object))
-			}
-		}
-	}
+      }
+    }
+  }
+  
+  func test1000time() {
+    measure {
+      for _ in 0..<1000 {
+        let _ = Struct(json: JSON(any: object))
+      }
+    }
+  }
+  
+  func test10000time() {
+    measure {
+      for _ in 0..<10000 {
+        let _ = Struct(json: JSON(any: object))
+      }
+    }
+  }
   
 //  func test100timeSwiftyJSON() {
 //    measure {

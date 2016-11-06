@@ -47,7 +47,7 @@
 		F323F5DC1DA8DB32009D824E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F323F5E61DA8DB87009D824E /* JSON.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
 		F323F5E81DA8DB87009D824E /* Protocols.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Protocols.swift; sourceTree = "<group>"; };
-		F323F5E91DA8DB87009D824E /* Collection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; };
+		F323F5E91DA8DB87009D824E /* Collection.swift */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.swift; path = Collection.swift; sourceTree = "<group>"; tabWidth = 4; wrapsLines = 1; };
 		F371ED171DAF826A005EE24D /* MapperTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapperTests.swift; sourceTree = "<group>"; };
 		F39DBD3F1DAE24E70055ED01 /* Implements.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Implements.swift; sourceTree = "<group>"; };
 		F3C1289C1DBB9AFD001EA4B3 /* ProtocolTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProtocolTests.swift; sourceTree = "<group>"; };

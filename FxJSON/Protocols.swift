@@ -33,20 +33,20 @@ typealias Pointer = UnsafePointer<Int8>
 //MARK: - JSONSerializable
 
 public protocol JSONSerializable {
-	
-	var json: JSON { get }
+  
+  var json: JSON { get }
 }
 
 public extension JSONSerializable {
-	
-	func jsonData(withOptions opt: JSONSerialization.WritingOptions = []) throws -> Data {
-		return try json.jsonData(withOptions: opt)
-	}
+  
+  func jsonData(withOptions opt: JSONSerialization.WritingOptions = []) throws -> Data {
+    return try json.jsonData(withOptions: opt)
+  }
   
   func jsonString(withOptions opt: JSONSerialization.WritingOptions = [],
                   encoding ecd: String.Encoding = String.Encoding.utf8) -> String {
-		return json.jsonString(withOptions: opt, encoding: ecd)
-	}
+    return json.jsonString(withOptions: opt, encoding: ecd)
+  }
 }
 
 public extension JSONSerializable
@@ -60,30 +60,30 @@ public extension JSONSerializable
 //MARK: - JSONDeserializable
 
 public protocol JSONDeserializable {
-	
+  
   init?(_ json: JSON)
   
   init(throws json: JSON) throws
 }
 
 public extension JSONDeserializable {
-	
-	init(jsonData: Data?, options: JSONSerialization.ReadingOptions = []) throws {
-		let json = JSON.init(jsonData: jsonData, options: options)
+  
+  init(jsonData: Data?, options: JSONSerialization.ReadingOptions = []) throws {
+    let json = JSON.init(jsonData: jsonData, options: options)
     self = try Self.init(throws: json)
-	}
+  }
     
-	init(jsonString: String?, options: JSONSerialization.ReadingOptions = []) throws {
+  init(jsonString: String?, options: JSONSerialization.ReadingOptions = []) throws {
     let json = JSON.init(jsonString: jsonString, options: options)
     self = try Self.init(throws: json)
-	}
-	
-	init(throws json: JSON) throws {
-		guard let value = Self.init(json) else {
-			throw json.error ?? JSON.Error.deserilize(from: json, to: Self.self)
-		}
-		self = value
-	}
+  }
+  
+  init(throws json: JSON) throws {
+    guard let value = Self.init(json) else {
+      throw json.error ?? JSON.Error.deserilize(from: json, to: Self.self)
+    }
+    self = value
+  }
 }
 
 public extension JSONDeserializable
@@ -98,15 +98,15 @@ public extension JSONDeserializable
 //MARK: - DefaultInitializable
 
 public protocol DefaultInitializable {
-	
-	init()
+  
+  init()
 }
 
 public extension JSONDeserializable where Self: DefaultInitializable {
-	
-	init(nonNil json: JSON) {
-		self = Self.init(json) ?? Self.init()
-	}
+  
+  init(nonNil json: JSON) {
+    self = Self.init(json) ?? Self.init()
+  }
 }
 
 //MARK: - JSONTransformable
@@ -115,50 +115,50 @@ public typealias JSONTransformable = JSONDeserializable & JSONSerializable
 
 extension JSONDeserializable where Self: JSONSerializable {
     
-	static var size: Int {
-		return MemoryLayout<Self>.size
-	}
-	
-	static func offsetToAlignment(_ value: Int) -> Int {
-		let align = MemoryLayout<Self>.alignment
-		let m = value % align
-		return m == 0 ? 0 : (align - m)
-	}
-	
-	static func code(_ value: JSONDeserializable, into pointer: Pointer) {
-		pointer.withMemoryRebound(to: Self.self, capacity: 1) { $0 }
+  static var size: Int {
+    return MemoryLayout<Self>.size
+  }
+  
+  static func offsetToAlignment(_ value: Int) -> Int {
+    let align = MemoryLayout<Self>.alignment
+    let m = value % align
+    return m == 0 ? 0 : (align - m)
+  }
+  
+  static func code(_ value: JSONDeserializable, into pointer: Pointer) {
+    pointer.withMemoryRebound(to: Self.self, capacity: 1) { $0 }
       .pointee = value as! Self
-	}
+  }
 }
 
 //MARK: - JSONConvertable
 
-public protocol JSONConvertable : JSONDeserializable {
+public protocol JSONConvertable: JSONDeserializable {
     
   static func convert(from json: JSON) -> Self?
 }
 
 public extension JSONConvertable {
     
-	init?(_ json: JSON) {
-		guard let v = Self.convert(from: json) else { return nil }
-		self = v
-	}
+  init?(_ json: JSON) {
+    guard let v = Self.convert(from: json) else { return nil }
+    self = v
+  }
 }
 
 //MARK: - JSONDecodable
 
-public protocol JSONDecodable : JSONDeserializable {
-	
-	init(decode json: JSON) throws
+public protocol JSONDecodable: JSONDeserializable {
+  
+  init(decode json: JSON) throws
 }
 
 public extension JSONDecodable {
-	
-	init?(_ json: JSON) {
-		guard let value = try? Self.init(decode: json) else { return nil }
-		self = value
-	}
+  
+  init?(_ json: JSON) {
+    guard let value = try? Self.init(decode: json) else { return nil }
+    self = value
+  }
   
   init(throws json: JSON) throws {
     self = try Self.init(decode: json)
@@ -167,27 +167,27 @@ public extension JSONDecodable {
 
 //MARK: - JSONEncodable
 
-public protocol JSONEncodable : JSONSerializable {
-	
-	func encode(mapper: JSON.Mapper)
+public protocol JSONEncodable: JSONSerializable {
+  
+  func encode(mapper: JSON.Mapper)
 }
 
 public extension JSONEncodable {
-	
-	func encode(mapper: JSON.Mapper) {
-		let children = Mirror(reflecting: self).children
-		for (key, value) in children {
+  
+  func encode(mapper: JSON.Mapper) {
+    let children = Mirror(reflecting: self).children
+    for (key, value) in children {
       guard let key = key, let serializable = value as? JSONSerializable else {
         mapper._json = .error(JSON.Error.unSupportType(type: type(of: value)))
         return
       }
-			mapper._json[create: .key(.key(key))] = serializable.json
-		}
-	}
+      mapper._json[create: .key(.key(key))] = serializable.json
+    }
+  }
   
-	var json: JSON {
-		return JSON.init(operate: encode)
-	}
+  var json: JSON {
+    return JSON.init(operate: encode)
+  }
 }
 
 //MARK: - JSONCodable
@@ -197,116 +197,116 @@ public typealias JSONCodable = JSONEncodable & JSONDecodable
 //MARK: - JSONMappable
 
 public protocol JSONMappable: DefaultInitializable, JSONEncodable, JSONDecodable {
-	
-	mutating func map(mapper: JSON.Mapper)
+  
+  mutating func map(mapper: JSON.Mapper)
 }
 
 public extension JSONMappable {
-	
-	mutating func map(mapper: JSON.Mapper) {}
-	
-	init(decode json: JSON) throws {
-		self.init()
-		let mapper = JSON.Mapper(json: json, isCreating: false)
-		self.map(mapper: mapper)
-		if let error = mapper._json.error { throw error }
-		try transform { (pointer, value, index) in
-			if mapper.pointerHashValues.contains(pointer.hashValue) { return }
-      let v = try type(of: value).init(throws: mapper._json[index])
-			type(of: v).code(v, into: pointer)
-		}
-	}
   
-	func encode(mapper: JSON.Mapper) {
-		var mutableSelf = self
-		mutableSelf.map(mapper: mapper)
-		if mapper.json.isError { return }
-		do {
-			try mutableSelf.transform { (pointer, value, index) in
-				if mapper.pointerHashValues.contains(pointer.hashValue) { return }
-				let json = value.json
-				if let error = json.error { throw error }
-				mapper._json[create: index] = json
-			}
-		} catch {
-				mapper._json = .error(error)
-		}
-	}
+  mutating func map(mapper: JSON.Mapper) {}
+  
+  init(decode json: JSON) throws {
+    self.init()
+    let mapper = JSON.Mapper(json: json, isCreating: false)
+    self.map(mapper: mapper)
+    if let error = mapper._json.error { throw error }
+    try transform { (pointer, value, index) in
+      if mapper.pointerHashValues.contains(pointer.hashValue) { return }
+      let v = try type(of: value).init(throws: mapper._json[index])
+      type(of: v).code(v, into: pointer)
+    }
+  }
+  
+  func encode(mapper: JSON.Mapper) {
+    var mutableSelf = self
+    mutableSelf.map(mapper: mapper)
+    if mapper.json.isError { return }
+    do {
+      try mutableSelf.transform { (pointer, value, index) in
+        if mapper.pointerHashValues.contains(pointer.hashValue) { return }
+        let json = value.json
+        if let error = json.error { throw error }
+        mapper._json[create: index] = json
+      }
+    } catch {
+        mapper._json = .error(error)
+    }
+  }
 }
 
 extension JSONMappable {
     
-	typealias Operate = (inout Pointer, JSONTransformable, JSON.Index) throws -> ()
+  typealias Operate = (inout Pointer, JSONTransformable, JSON.Index) throws -> ()
     
-	func classTransform(by mirror: Mirror, to pointer: inout Pointer,
-	                    with offset: inout Int, operate: Operate) throws {
-		if let superMirror = mirror.superclassMirror {
-			try classTransform(by: superMirror, to: &pointer, with: &offset, operate: operate)
-		}
-		try strucTransform(by: mirror, to: &pointer, with: &offset, operate: operate)
-	}
-  
-	func strucTransform(by mirror: Mirror, to pointer: inout Pointer,
+  func classTransform(by mirror: Mirror, to pointer: inout Pointer,
                       with offset: inout Int, operate: Operate) throws {
-		for child in mirror.children {
-			guard let value = child.value as? JSONTransformable else {
-				throw JSON.Error.unSupportType(type: type(of: child.value))
-			}
-			
-			let size = type(of: value).size
-			let offsetToAlignment = type(of: value).offsetToAlignment(offset)
-			
-			pointer = pointer.advanced(by: offsetToAlignment)
-			offset += offsetToAlignment
-			
-			if let label = child.label {
-				try operate(&pointer, value, .key(.key(label)))
-			}
-			
-			pointer = pointer.advanced(by: size)
-			offset += size
-		}
-	}
+    if let superMirror = mirror.superclassMirror {
+      try classTransform(by: superMirror, to: &pointer, with: &offset, operate: operate)
+    }
+    try strucTransform(by: mirror, to: &pointer, with: &offset, operate: operate)
+  }
+  
+  func strucTransform(by mirror: Mirror, to pointer: inout Pointer,
+                      with offset: inout Int, operate: Operate) throws {
+    for child in mirror.children {
+      guard let value = child.value as? JSONTransformable else {
+        throw JSON.Error.unSupportType(type: type(of: child.value))
+      }
+      
+      let size = type(of: value).size
+      let offsetToAlignment = type(of: value).offsetToAlignment(offset)
+      
+      pointer = pointer.advanced(by: offsetToAlignment)
+      offset += offsetToAlignment
+      
+      if let label = child.label {
+        try operate(&pointer, value, .key(.key(label)))
+      }
+      
+      pointer = pointer.advanced(by: size)
+      offset += size
+    }
+  }
     
-	mutating func transform(operate: Operate) throws {
-		let mirror = Mirror(reflecting: self)
-		switch mirror.displayStyle {
-		case .struct?:
-			var pointer = withUnsafePointer(to: &self) { UnsafeRawPointer($0) }
-				.bindMemory(to: Int8.self, capacity: MemoryLayout<Self>.stride)
-			var offset = 0
-			try strucTransform(by: mirror, to: &pointer, with: &offset, operate: operate)
-		case .class?:
-			let opaquePointer = Unmanaged.passUnretained(self as AnyObject).toOpaque()
-			var offset = 8 + MemoryLayout<Int>.size
-			let mutablePointer = opaquePointer
-				.bindMemory(to: Int8.self, capacity: MemoryLayout<Self>.stride)
-			var pointer = Pointer(mutablePointer).advanced(by: offset)
-			try classTransform(by: mirror, to: &pointer, with: &offset , operate: operate)
-		default:
-			throw JSON.Error.unSupportType(type: (type(of: self)))
-		}
-	}
+  mutating func transform(operate: Operate) throws {
+    let mirror = Mirror(reflecting: self)
+    switch mirror.displayStyle {
+    case .struct?:
+      var pointer = withUnsafePointer(to: &self) { UnsafeRawPointer($0) }
+        .bindMemory(to: Int8.self, capacity: MemoryLayout<Self>.stride)
+      var offset = 0
+      try strucTransform(by: mirror, to: &pointer, with: &offset, operate: operate)
+    case .class?:
+      let opaquePointer = Unmanaged.passUnretained(self as AnyObject).toOpaque()
+      var offset = 8 + MemoryLayout<Int>.size
+      let mutablePointer = opaquePointer
+        .bindMemory(to: Int8.self, capacity: MemoryLayout<Self>.stride)
+      var pointer = Pointer(mutablePointer).advanced(by: offset)
+      try classTransform(by: mirror, to: &pointer, with: &offset , operate: operate)
+    default:
+      throw JSON.Error.unSupportType(type: (type(of: self)))
+    }
+  }
 }
 
 //MARK: - Transform
 
 public protocol Transform {
-	
-	typealias Func = (JSONTransformable) throws -> JSONTransformable
-	
-	var jsonObjectType: JSONTransformable.Type { get }
-	var objectType: JSONTransformable.Type { get }
-	
-	var fromJSONFunc: Func? { get }
-	var toJSONFunc: Func? { get }
+  
+  typealias Func = (JSONTransformable) throws -> JSONTransformable
+  
+  var jsonObjectType: JSONTransformable.Type { get }
+  var objectType: JSONTransformable.Type { get }
+  
+  var fromJSONFunc: Func? { get }
+  var toJSONFunc: Func? { get }
 }
 
 //MARK: - JSONMapper
 
 public extension JSON {
-	
-	final class Mapper {
+  
+  final class Mapper {
     
     var json: JSON {
       get {
@@ -317,17 +317,17 @@ public extension JSON {
         setJSON(with: newValue)(&_json)
       }
     }
-		
-		fileprivate var _json: JSON
-		
-		let isCreating: Bool
+    
+    fileprivate var _json: JSON
+    
+    let isCreating: Bool
     
     var pointerHashValues: Set<Int> = []
-		var getJSON: [(JSON) -> JSON] = []
-		var setJSON: [(JSON) -> (inout JSON) -> ()] = []
-		
-		init(json: JSON, isCreating: Bool) {
-			self._json = json
+    var getJSON: [(JSON) -> JSON] = []
+    var setJSON: [(JSON) -> (inout JSON) -> ()] = []
+    
+    init(json: JSON, isCreating: Bool) {
+      self._json = json
       self.isCreating = isCreating
     }
     
@@ -337,113 +337,113 @@ public extension JSON {
       return { json in
         var subJSON = get(json)
         self.setJSON(with: value)(&subJSON)
-				if subJSON.isError { json = subJSON; return }
+        if subJSON.isError { json = subJSON; return }
         set(subJSON)(&json)
       }
     }
-	}
+  }
 }
 
 public extension JSON.Mapper {
   
-	func ignore<T>(_ any: inout T) {
-		pointerHashValues.insert(withUnsafePointer(to: &any) { $0 }.hashValue)
-	}
+  func ignore<T>(_ any: inout T) {
+    pointerHashValues.insert(withUnsafePointer(to: &any) { $0 }.hashValue)
+  }
     
-	func serialize<T : JSONSerializable>(from any: inout T) {
+  func serialize<T: JSONSerializable>(from any: inout T) {
     ignore(&any)
     guard isCreating else { getJSON.removeAll(); return }
-		if _json.isError { return }
+    if _json.isError { return }
     json = any.json
-	}
+  }
     
-	func desrialize<T : JSONDeserializable>(to any: inout T) {
-		ignore(&any)
+  func desrialize<T: JSONDeserializable>(to any: inout T) {
+    ignore(&any)
     guard !isCreating else { getJSON.removeAll(); setJSON.removeAll(); return }
-		do {
+    do {
       any = try json.decode()
-		} catch {
-			_json = JSON.error(error)
-		}
-	}
-	
-	func transform<T : JSONTransformable>(between any: inout T) {
-		isCreating ? serialize(from: &any) : desrialize(to: &any)
-	}
-	
-	subscript(nonNull path: JSON.Index...) -> JSON.Mapper {
-		get {
+    } catch {
+      _json = JSON.error(error)
+    }
+  }
+  
+  func transform<T: JSONTransformable>(between any: inout T) {
+    isCreating ? serialize(from: &any) : desrialize(to: &any)
+  }
+  
+  subscript(nonNull path: JSON.Index...) -> JSON.Mapper {
+    get {
       guard isCreating else { getJSON.append { $0[path] }; return self }
       getJSON.append { $0[nonNull: path] }
       setJSON.append { value in { (json: inout JSON) in json[nonNull: path] = value } }
-			return self
-		}
-	}
-	
-	subscript(path: JSON.Index...) -> JSON.Mapper {
-		get {
+      return self
+    }
+  }
+  
+  subscript(path: JSON.Index...) -> JSON.Mapper {
+    get {
       guard isCreating else { getJSON.append { $0[path] }; return self }
       getJSON.append { $0[create: path] }
       setJSON.append { value in { (json: inout JSON) in json[create: path] = value } }
-			return self
-		}
-	}
-	
-	subscript(index: JSON.Index) -> JSON.Mapper {
-		get {
+      return self
+    }
+  }
+  
+  subscript(index: JSON.Index) -> JSON.Mapper {
+    get {
       guard isCreating else { getJSON.append { $0[index] }; return self }
       getJSON.append { $0[create: index] }
       setJSON.append { value in { (json: inout JSON) in json[create: index] = value } }
-			return self
-		}
-	}
-	
-	subscript(transform: Transform) -> JSON.Mapper {
-		get {
+      return self
+    }
+  }
+  
+  subscript(transform: Transform) -> JSON.Mapper {
+    get {
       getJSON.append { $0[transform] }
       guard isCreating else { return self }
       setJSON.append { value in { (json: inout JSON) in json[transform] = value } }
-			return self
-		}
-	}
+      return self
+    }
+  }
 }
 
 //MARK: - <>
 
 postfix operator <
 
-public postfix func <<T : JSONDeserializable>(json: JSON) throws -> T {
+public postfix func <<T: JSONDeserializable>(json: JSON) throws -> T {
   return try json.decode()
 }
 
 infix operator <>
 
-public func <><T : JSONTransformable>(lhs: inout T, rhs: JSON.Mapper) {
-	rhs.transform(between: &lhs)
+public func <><T: JSONTransformable>(lhs: inout T, rhs: JSON.Mapper) {
+  rhs.transform(between: &lhs)
 }
 
 infix operator ><
 
-public func ><<T : JSONTransformable>(lhs: inout T, rhs: JSON.Mapper) {
-	rhs.ignore(&lhs)
+public func ><<T: JSONTransformable>(lhs: inout T, rhs: JSON.Mapper) {
+  rhs.ignore(&lhs)
 }
 
 //MARK: - >>
 
 public func >><T: JSONSerializable>(lhs: inout T, rhs: JSON.Mapper) {
-	rhs.serialize(from: &lhs)
+  rhs.serialize(from: &lhs)
 }
 
 //MARK: - <<
 
-public func <<<T : JSONDeserializable>(lhs: inout T, rhs: JSON.Mapper) {
-	rhs.desrialize(to: &lhs)
+public func <<<T: JSONDeserializable>(lhs: inout T, rhs: JSON.Mapper) {
+  rhs.desrialize(to: &lhs)
 }
 
-public func <<<T : JSONSerializable>(lhs: JSON.Mapper, rhs: T) {
-	if lhs.isCreating { lhs.json = rhs.json }
+public func <<<T: JSONSerializable>(lhs: JSON.Mapper, rhs: T) {
+  if lhs.isCreating { lhs.json = rhs.json }
 }
 
-public func <<<T : JSONDeserializable>(lhs: JSON, rhs: JSON.Index) -> T? {
-	return try? lhs[rhs].decode()
+public func <<<T: JSONDeserializable>(lhs: JSON, rhs: JSON.Index) -> T? {
+  return try? lhs[rhs].decode()
 }

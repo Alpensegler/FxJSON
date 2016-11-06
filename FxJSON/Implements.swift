@@ -30,36 +30,36 @@ import Foundation
 
 //MARK: - JSON
 
-extension JSON : JSONSerializable {
-	
-	public var json: JSON {
-		return self
-	}
-	
-	public init(_ object: @autoclosure () throws -> JSONSerializable) {
-		do { try self = object().json } catch { self = .error(error) }
-	}
+extension JSON: JSONSerializable {
   
-	public init(operate: (Mapper) -> ()) {
-		let mapper = Mapper(json: .object([:]), isCreating: true)
-		operate(mapper)
-		self = mapper.json
-	}
+  public var json: JSON {
+    return self
+  }
+  
+  public init(_ object: @autoclosure () throws -> JSONSerializable) {
+    do { try self = object().json } catch { self = .error(error) }
+  }
+  
+  public init(operate: (Mapper) -> ()) {
+    let mapper = Mapper(json: .object([:]), isCreating: true)
+    operate(mapper)
+    self = mapper.json
+  }
   
   public func transformed(operate: (Mapper) -> ()) -> JSON {
     let mapper = Mapper(json: self, isCreating: true)
     operate(mapper)
     return(mapper.json)
   }
-	
-	public func decode<T : JSONDeserializable>() throws -> T {
+  
+  public func decode<T: JSONDeserializable>() throws -> T {
     return try T(throws: self)
-	}
-	
-	public func map<T : JSONDeserializable, U : JSONSerializable>(
-		_ transform: (T) throws -> U) rethrows -> JSON {
-		return try T(self).map(transform).map { $0.json } ?? self
-	}
+  }
+  
+  public func map<T: JSONDeserializable, U: JSONSerializable>(
+    _ transform: (T) throws -> U) rethrows -> JSON {
+    return try T(self).map(transform).map { $0.json } ?? self
+  }
   
   public func flatMap<T: JSONDeserializable>(
     _ transform: (T) throws -> JSON) rethrows -> JSON {
@@ -69,55 +69,55 @@ extension JSON : JSONSerializable {
 
 //MARK: - JSONTransformable
 
-extension String : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard case let .string(str) = json else { return nil }
-		self = str
-	}
-	
-	public var json: JSON {
-		return .string(self)
-	}
+extension String: JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard case let .string(str) = json else { return nil }
+    self = str
+  }
+  
+  public var json: JSON {
+    return .string(self)
+  }
 }
 
-extension Bool : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard case let .bool(boo) = json else { return nil }
-		self = boo
-	}
-	
-	public var json: JSON {
-		return .bool(self)
-	}
+extension Bool: JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard case let .bool(boo) = json else { return nil }
+    self = boo
+  }
+  
+  public var json: JSON {
+    return .bool(self)
+  }
 }
 
-extension Float : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard case let .number(num) = json else { return nil }
-		self = num.floatValue
-	}
-	
-	public var json: JSON {
-		return .number(NSNumber(value: self))
-	}
+extension Float: JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard case let .number(num) = json else { return nil }
+    self = num.floatValue
+  }
+  
+  public var json: JSON {
+    return .number(NSNumber(value: self))
+  }
 }
 
-extension Double : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard case let .number(num) = json else { return nil }
-		self = num.doubleValue
-	}
-	
-	public var json: JSON {
-		return .number(NSNumber(value: self))
-	}
+extension Double: JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard case let .number(num) = json else { return nil }
+    self = num.doubleValue
+  }
+  
+  public var json: JSON {
+    return .number(NSNumber(value: self))
+  }
 }
 
-extension Int : JSONTransformable, DefaultInitializable {
+extension Int: JSONTransformable, DefaultInitializable {
   
   public init?(_ json: JSON) {
     guard case let .number(num) = json else { return nil }
@@ -129,101 +129,101 @@ extension Int : JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Int8 : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard case let .number(num) = json else { return nil }
-		self = num.int8Value
-	}
-	
-	public var json: JSON {
-		return .number(NSNumber(value: self))
-	}
+extension Int8: JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard case let .number(num) = json else { return nil }
+    self = num.int8Value
+  }
+  
+  public var json: JSON {
+    return .number(NSNumber(value: self))
+  }
 }
 
-extension Int16 : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard case let .number(num) = json else { return nil }
-		self = num.int16Value
-	}
-	
-	public var json: JSON {
-		return .number(NSNumber(value: self))
-	}
+extension Int16: JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard case let .number(num) = json else { return nil }
+    self = num.int16Value
+  }
+  
+  public var json: JSON {
+    return .number(NSNumber(value: self))
+  }
 }
 
-extension Int32 : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard case let .number(num) = json else { return nil }
-		self = num.int32Value
-	}
-	
-	public var json: JSON {
-		return .number(NSNumber(value: self))
-	}
+extension Int32: JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard case let .number(num) = json else { return nil }
+    self = num.int32Value
+  }
+  
+  public var json: JSON {
+    return .number(NSNumber(value: self))
+  }
 }
 
-extension Int64 : JSONTransformable, DefaultInitializable {
-	
-	public init?(_ json: JSON) {
-		guard case let .number(num) = json else { return nil }
-		self = num.int64Value
-	}
-	
-	public var json: JSON {
-		return .number(NSNumber(value: self))
-	}
+extension Int64: JSONTransformable, DefaultInitializable {
+  
+  public init?(_ json: JSON) {
+    guard case let .number(num) = json else { return nil }
+    self = num.int64Value
+  }
+  
+  public var json: JSON {
+    return .number(NSNumber(value: self))
+  }
 }
 
-extension Date : JSONTransformable {
-	
-	public init?(_ json: JSON) {
-		switch (DateTransform.default, json) {
-		case (.formatter(let formatter), .string(let v)):
-			self.init()
-			guard let date = formatter.date(from: v) else { return nil }
-			self = date
-		case (.timeIntervalSince(let since), .number(let v)):
-			self.init(timeIntervalSince1970: v.doubleValue + since.timeInterval)
-		default:
-			return nil
-		}
-	}
-	
-	public var json: JSON {
-		switch DateTransform.default {
-		case .formatter(let formatetr):
-			return .string(formatetr.string(from: self))
-		case .timeIntervalSince(let since):
-			return .number(NSNumber(value: timeIntervalSince1970 - since.timeInterval))
-		}
-	}
+extension Date: JSONTransformable {
+  
+  public init?(_ json: JSON) {
+    switch (DateTransform.default, json) {
+    case (.formatter(let formatter), .string(let v)):
+      self.init()
+      guard let date = formatter.date(from: v) else { return nil }
+      self = date
+    case (.timeIntervalSince(let since), .number(let v)):
+      self.init(timeIntervalSince1970: v.doubleValue + since.timeInterval)
+    default:
+      return nil
+    }
+  }
+  
+  public var json: JSON {
+    switch DateTransform.default {
+    case .formatter(let formatetr):
+      return .string(formatetr.string(from: self))
+    case .timeIntervalSince(let since):
+      return .number(NSNumber(value: timeIntervalSince1970 - since.timeInterval))
+    }
+  }
 }
 
-extension URL : JSONTransformable {
-	
-	public init?(_ json: JSON) {
-		guard let value = String(json)?
+extension URL: JSONTransformable {
+  
+  public init?(_ json: JSON) {
+    guard let value = String(json)?
       .addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
       else { return nil }
-		self.init(string: value)
-	}
-	
-	public var json: JSON {
-		return .string(self.absoluteString)
-	}
+    self.init(string: value)
+  }
+  
+  public var json: JSON {
+    return .string(self.absoluteString)
+  }
 }
 
-extension NSNull : JSONSerializable {
-	
-	public var json: JSON {
-		return JSON()
-	}
+extension NSNull: JSONSerializable {
+  
+  public var json: JSON {
+    return JSON()
+  }
 }
 
-extension Optional : JSONTransformable {
+extension Optional: JSONTransformable {
   
   public init?(_ json: JSON) {
     guard let T = Wrapped.self as? JSONDeserializable.Type else { return nil }
@@ -239,7 +239,7 @@ extension Optional : JSONTransformable {
   }
 }
 
-extension ImplicitlyUnwrappedOptional : JSONTransformable, DefaultInitializable {
+extension ImplicitlyUnwrappedOptional: JSONTransformable, DefaultInitializable {
   
   public init?(_ json: JSON) {
     guard let T = Wrapped.self as? JSONDeserializable.Type else { return nil }
@@ -255,7 +255,7 @@ extension ImplicitlyUnwrappedOptional : JSONTransformable, DefaultInitializable 
   }
 }
 
-extension Set : JSONTransformable, DefaultInitializable {
+extension Set: JSONTransformable, DefaultInitializable {
   
   public init?(_ json: JSON) {
     self.init()
@@ -268,18 +268,18 @@ extension Set : JSONTransformable, DefaultInitializable {
   }
   
   public var json: JSON {
-		return JSON(try JSON.array(self.map { element in
-			if let element = element as? JSONSerializable {
-				let json = element.json
-				if let error = json.error { throw error }
-				return json.object
-			}
-			return element as Any
-		}))
+    return JSON(try JSON.array(self.map { element in
+      if let element = element as? JSONSerializable {
+        let json = element.json
+        if let error = json.error { throw error }
+        return json.object
+      }
+      return element as Any
+    }))
   }
 }
 
-extension Array : JSONTransformable, DefaultInitializable {
+extension Array: JSONTransformable, DefaultInitializable {
   
   public init?(_ json: JSON) {
     guard let arr = json.array else { return nil }
@@ -296,8 +296,8 @@ extension Array : JSONTransformable, DefaultInitializable {
   public var json: JSON {
     return JSON(try JSON.array(self.map { element in
       if let element = element as? JSONSerializable {
-				let json = element.json
-				if let error = json.error { throw error }
+        let json = element.json
+        if let error = json.error { throw error }
         return json.object
       }
       return element as Any
@@ -305,7 +305,7 @@ extension Array : JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Dictionary : JSONTransformable, DefaultInitializable {
+extension Dictionary: JSONTransformable, DefaultInitializable {
   
   public init?(_ json: JSON) {
     guard let dict = json.dict, Key.self is String.Type else { return nil }
@@ -325,8 +325,8 @@ extension Dictionary : JSONTransformable, DefaultInitializable {
     }
     return JSON(try JSON.object(self.map { (key, value) in
       if let value = value as? JSONSerializable {
-				let json = value.json
-				if let error = json.error { throw error }
+        let json = value.json
+        if let error = json.error { throw error }
         return (key as! String, json.object)
       }
       return (key as! String, value as Any)
@@ -337,105 +337,105 @@ extension Dictionary : JSONTransformable, DefaultInitializable {
 //MARK: - Transform
 
 public enum CustomTransform<JSONObject: JSONTransformable, Object: JSONTransformable>: Transform {
-	
-	case fromJSON((JSONObject) throws -> Object)
-	case toJSON((Object) throws -> JSONObject)
-	case both(fromJSON: (JSONObject) throws -> Object, toJSON: (Object) throws -> JSONObject)
-	
-	public var jsonObjectType: JSONTransformable.Type {
-		return JSONObject.self
-	}
-	
-	public var objectType: JSONTransformable.Type {
-		return Object.self
-	}
-	
-	public var fromJSONFunc: Transform.Func? {
-		switch self {
-		case let .fromJSON(fromJSONFunc), let .both(fromJSON: fromJSONFunc, toJSON: _):
-			return { try fromJSONFunc($0 as! JSONObject) }
-		default:
-			return nil
-		}
-	}
-	
-	public var toJSONFunc: Transform.Func? {
-		switch self {
-		case let .toJSON(toJSONFunc), let .both(fromJSON: _, toJSON: toJSONFunc):
-			return { try toJSONFunc($0 as! Object) }
-		default:
-			return nil
-		}
-	}
+  
+  case fromJSON((JSONObject) throws -> Object)
+  case toJSON((Object) throws -> JSONObject)
+  case both(fromJSON: (JSONObject) throws -> Object, toJSON: (Object) throws -> JSONObject)
+  
+  public var jsonObjectType: JSONTransformable.Type {
+    return JSONObject.self
+  }
+  
+  public var objectType: JSONTransformable.Type {
+    return Object.self
+  }
+  
+  public var fromJSONFunc: Transform.Func? {
+    switch self {
+    case let .fromJSON(fromJSONFunc), let .both(fromJSON: fromJSONFunc, toJSON: _):
+      return { try fromJSONFunc($0 as! JSONObject) }
+    default:
+      return nil
+    }
+  }
+  
+  public var toJSONFunc: Transform.Func? {
+    switch self {
+    case let .toJSON(toJSONFunc), let .both(fromJSON: _, toJSON: toJSONFunc):
+      return { try toJSONFunc($0 as! Object) }
+    default:
+      return nil
+    }
+  }
 }
 
 public enum DateTransform: Transform {
-	
-	public enum Since {
-		
-		case year1970
-		case now
-		case referenceDate
-		case date(Date)
-		
-		var timeInterval: TimeInterval {
-			switch self {
-			case .year1970: return 0
-			case .now: return Date().timeIntervalSince1970
-			case .referenceDate: return NSTimeIntervalSince1970
-			case .date(let date): return date.timeIntervalSince1970
-			}
-		}
-	}
-	
-	case formatter(DateFormatter)
-	case timeIntervalSince(Since)
-	
-	public static var `default`: DateTransform = {
-		$0.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-		return .formatter($0)
-	}(DateFormatter())
-	
-	public var jsonObjectType: JSONTransformable.Type {
-		switch self {
-		case .formatter: return String.self
-		case .timeIntervalSince: return Double.self
-		}
-	}
-	
-	public var objectType: JSONTransformable.Type {
-		switch DateTransform.default {
-		case .formatter: return String.self
-		case .timeIntervalSince: return Double.self
-		}
-	}
-	
-	func setTransform(from: DateTransform, to: DateTransform) -> Transform.Func {
-		let deserialize = { (jsonTransformable: JSONTransformable) throws -> Date in
-			switch from {
-			case .formatter(let formatter):
-				let dateString = jsonTransformable as! String
-				if let date = formatter.date(from: dateString) { return date }
-				throw JSON.Error.formatter(format: formatter.dateFormat, value: dateString)
-			case .timeIntervalSince(let since):
-				let dateNum = jsonTransformable as! TimeInterval
-				return Date(timeIntervalSince1970: dateNum + since.timeInterval)
-			}
-		}
-		let serialize = { (date: Date) -> JSONTransformable in
-			switch to {
-			case .formatter(let formatter): return formatter.string(from: date)
-			case .timeIntervalSince(let since): return date.timeIntervalSince1970 - since.timeInterval
-			}
-		}
-		return { serialize(try deserialize($0)) }
-	}
-	
-	public var fromJSONFunc: Transform.Func? {
-		return setTransform(from: self, to: DateTransform.default)
-	}
-	
-	public var toJSONFunc: Transform.Func? {
-		return setTransform(from: DateTransform.default, to: self)
-	}
+  
+  public enum Since {
+    
+    case year1970
+    case now
+    case referenceDate
+    case date(Date)
+    
+    var timeInterval: TimeInterval {
+      switch self {
+      case .year1970: return 0
+      case .now: return Date().timeIntervalSince1970
+      case .referenceDate: return NSTimeIntervalSince1970
+      case .date(let date): return date.timeIntervalSince1970
+      }
+    }
+  }
+  
+  case formatter(DateFormatter)
+  case timeIntervalSince(Since)
+  
+  public static var `default`: DateTransform = {
+    $0.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+    return .formatter($0)
+  }(DateFormatter())
+  
+  public var jsonObjectType: JSONTransformable.Type {
+    switch self {
+    case .formatter: return String.self
+    case .timeIntervalSince: return Double.self
+    }
+  }
+  
+  public var objectType: JSONTransformable.Type {
+    switch DateTransform.default {
+    case .formatter: return String.self
+    case .timeIntervalSince: return Double.self
+    }
+  }
+  
+  func setTransform(from: DateTransform, to: DateTransform) -> Transform.Func {
+    let deserialize = { (jsonTransformable: JSONTransformable) throws -> Date in
+      switch from {
+      case .formatter(let formatter):
+        let dateString = jsonTransformable as! String
+        if let date = formatter.date(from: dateString) { return date }
+        throw JSON.Error.formatter(format: formatter.dateFormat, value: dateString)
+      case .timeIntervalSince(let since):
+        let dateNum = jsonTransformable as! TimeInterval
+        return Date(timeIntervalSince1970: dateNum + since.timeInterval)
+      }
+    }
+    let serialize = { (date: Date) -> JSONTransformable in
+      switch to {
+      case .formatter(let formatter): return formatter.string(from: date)
+      case .timeIntervalSince(let since): return date.timeIntervalSince1970 - since.timeInterval
+      }
+    }
+    return { serialize(try deserialize($0)) }
+  }
+  
+  public var fromJSONFunc: Transform.Func? {
+    return setTransform(from: self, to: DateTransform.default)
+  }
+  
+  public var toJSONFunc: Transform.Func? {
+    return setTransform(from: DateTransform.default, to: self)
+  }
 }

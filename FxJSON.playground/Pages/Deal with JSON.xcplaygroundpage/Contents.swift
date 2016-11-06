@@ -1,48 +1,27 @@
 /*:
-> # To use **FxJSON.playground**:
-1. Open **FxJSON.xcworkspace**.
-1. Build the **FxJSON** scheme using iPhone 5s simulator (**Product** → **Build**).
-1. Open **FxJSON** playground in the **Project navigator**.
-
-[Using Protocols](@next)
+ > # To use **FxJSON.playground**:
+ 1. Open **FxJSON.xcworkspace**.
+ 1. Build the **FxJSON** scheme using iPhone 5s simulator (**Product** → **Build**).
+ 1. Open **FxJSON** playground in the **Project navigator**.
+ 1. You can see JSON data in playground **FxJSON** → **Resources** → **json.json**
+ 
+ ### Other Contents:
+ - [Overview](Overview)
+ - [Using Protocols](Using%20Protocols)
+ ----
 */
 import FxJSON
 import Foundation
-/*:
- Assume that you have a json data like this:
- */
-let jsonObject = [
-	"code": "0",
-	"data": [
-		"users": [
-			[
-				"userID": 0,
-				"name": "Admin",
-				"admin": true,
-				"website": NSNull(),
-				"signUpTime": "1996-03-12 00:00:00"
-				],
-			[
-				"userID": 1,
-				"name": "Frain",
-				"admin": false,
-				"website": "https://github.com/FrainL",
-				"signUpTime": "2016-04-22 21:31:31",
-				"friends": [
-					["userID": 2, "name": "box", "admin": false],
-					["userID": 2, "name": "sky", "admin": false]
-				]
-			]
-		]
-	]
-] as [String : Any]
 
-let jsonData = try JSONSerialization.data(withJSONObject: jsonObject)
+//: Assume that you have a json data:
+
+let jsonData = try Data(contentsOf: #fileLiteral(resourceName: "JSON.json"))
 let jsonString = String(data: jsonData, encoding: .utf8)
+let jsonObject = try JSONSerialization.jsonObject(with: jsonData)
 
 //: ## 1. Initalization
-let json = JSON(jsonObject)
-//let json = JSON(any: jsonObject)
+let json = JSON(any: jsonObject)
+//let json = JSON(jsonObject)
 //let json = JSON(jsonData: jsonData)
 //let json = JSON(jsonString: jsonString)
 
@@ -56,7 +35,7 @@ json[path]
 json[path, "name"]
 
 //: Use `SupportedType(json)` to deserilize to `SupportedType?`
-let website = URL(json[path]["website"])
+let code = Int(json["code"])
 let whatsUp = String(json[path]["whatsUp"])
 
 //: Using `nonNil` param to get none-Optional type
@@ -72,11 +51,11 @@ do {
   dict
 }
 
-//: Using `[SupportedType]`、`[Any]`、`[String : SupportedType]`、 `[String : Any]`
-let user = [String : Any](json["data", "users", 0])
-let friends = [[String : Any]](nonNil: json[path, "friends"])
+//: Using `[SupportedType]`、`[Any]`、`[String: SupportedType]`、 `[String: Any]`
+let user = [String: Any](json["data", "users", 0])
+let friends = [[String: Any]](nonNil: json[path, "friends"])
 
-let object = try [String : Any](jsonData: jsonData)
+let object = try [String: Any](jsonData: jsonData)
 //: ## 3. JSON as MutableCollection
 //: `JSON` is a MutableCollection, so you may use:
 json.count
@@ -102,41 +81,46 @@ for (key, subJSON) in json.asDict {
 let formatter = DateFormatter()
 formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
 DateTransform.default = DateTransform.formatter(formatter)
-//: Getting date using DateTransform(use "yyyy-MM-dd'T'HH:mm:ssZ" as default formatter if it wasn't change)
+//: Getting date using `DateTransform`
 let signUpTime = Date(json[path, "signUpTime"])
 let date = Date(JSON(NSTimeIntervalSince1970)[DateTransform.timeIntervalSince(.year1970)])
 
+//: > `DateTransform` use "yyyy-MM-dd'T'HH:mm:ssZ" as default formatter.
+//:
 //: Using `CustomTransform`, you can choose to use `.toJSON`, `.fromJSON.` or `.both`
-let from = CustomTransform<String, Int>.fromJSON {
-	if let number = Int($0) { return number }
+let from = CustomTransform<String?, String>.fromJSON {
+	if let string = $0 { return "https://\(string)" }
 	throw JSON.Error.customTransfrom(source: $0)
 }
-let code = Int(json["code"][from])
+
+let website = URL(json[path]["website"][from])
 
 do {
-	let code = try Int(throws: json[path, "name"][from])
+	let code = try Int(throws: json["code"][from])
 } catch let JSON.Error.customTransfrom(source: any) {
 	any
 }
-
+//: > You might use throw JSON.Eror.customTransfrom to handle transforming errors.
 //: ## 5. Create a JSON
 //: Using Literal
-let userJSON = [
+let userJSON: JSON = [
 	"userID": userID,
 	"name": name,
 	"admin": admin
-] as JSON
+]
 
 //: Using operator <<
-let to = CustomTransform<String, Int>.toJSON { "\($0)" }
+let to = CustomTransform<String, String>.toJSON {
+  $0.substring(from: $0.index($0.startIndex, offsetBy: 8))
+}
 
 let createJSON = JSON {
-	$0["code"][to]         << code
+	$0["code"]             << code
 	$0["data", "users"][0] << user
 	$0[path]               << JSON {
 		$0                     << userJSON
 		$0[nonNull: "whatsUp"] << whatsUp
-		$0["website"]          << website
+		$0["website"][to]      << website
 		$0["signUpTime"]       << signUpTime
 		$0["friends"]          << friends
 	}

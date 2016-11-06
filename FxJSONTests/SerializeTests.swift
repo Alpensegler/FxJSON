@@ -29,67 +29,67 @@
 import XCTest
 
 class SerializeTests: XCTestCase {
-	
-	func testSerialize() {
-		XCTAssertEqual("why so serious".json, JSON("why so serious"))
-		XCTAssertEqual(true.json, JSON(true))
-		XCTAssertEqual(1.json, JSON(1))
-		XCTAssertEqual(Int32(32).json, JSON(32))
-		XCTAssertEqual(Int64(64).json, JSON(64))
-		XCTAssertEqual(Float(1234.567).json, JSON(Float(1234.567)))
-		XCTAssertEqual(Double(1234.5678).json, JSON(1234.5678))
-		
-		let url = URL(string: "https://github.com/FrainL")
-		XCTAssertEqual(url?.json, JSON("https://github.com/FrainL"))
-		
-		XCTAssertEqual(["one", 2, 3.3, Double(4)].json,
-		               JSON(["one", 2, 3.3, Double(4)]))
-		
+  
+  func testSerialize() {
+    XCTAssertEqual("why so serious".json, JSON("why so serious"))
+    XCTAssertEqual(true.json, JSON(true))
+    XCTAssertEqual(1.json, JSON(1))
+    XCTAssertEqual(Int32(32).json, JSON(32))
+    XCTAssertEqual(Int64(64).json, JSON(64))
+    XCTAssertEqual(Float(1234.567).json, JSON(Float(1234.567)))
+    XCTAssertEqual(Double(1234.5678).json, JSON(1234.5678))
+    
+    let url = URL(string: "https://github.com/FrainL")
+    XCTAssertEqual(url?.json, JSON("https://github.com/FrainL"))
+    
+    XCTAssertEqual(["one", 2, 3.3, Double(4)].json,
+                   JSON(["one", 2, 3.3, Double(4)]))
+    
     guard case JSON.Error.unSupportType? = Optional.some(NSValue()).json.error else {
       XCTFail(); return
     }
-		XCTAssertEqual(Optional<Int>.none.json, JSON())
-		XCTAssertEqual(Optional.some("some").json, JSON("some"))
-		
-		let set: Set = ["hey", "fine?", "all right"]
-		XCTAssertEqual(set.json, JSON(["hey", "fine?", "all right"]))
-		
-		let json: JSON = [
-			"arr": ["one", 2, 3.3, Double(4)],
-			"opt": Optional<Int>.none,
-			"set": set
-		]
-		let dict: [String: Any] = [
-			"arr": ["one", 2, 3.3, Double(4)],
-			"opt": Optional<Int>.none,
-			"set": set
-		]
+    XCTAssertEqual(Optional<Int>.none.json, JSON())
+    XCTAssertEqual(Optional.some("some").json, JSON("some"))
     
-		XCTAssertEqual(dict.json, json)
+    let set: Set = ["hey", "fine?", "all right"]
+    XCTAssertEqual(set.json, JSON(["hey", "fine?", "all right"]))
     
-		XCTAssertEqual([].json, JSON([]))
+    let json: JSON = [
+      "arr": ["one", 2, 3.3, Double(4)],
+      "opt": Optional<Int>.none,
+      "set": set
+    ]
+    let dict: [String: Any] = [
+      "arr": ["one", 2, 3.3, Double(4)],
+      "opt": Optional<Int>.none,
+      "set": set
+    ]
+    
+    XCTAssertEqual(dict.json, json)
+    
+    XCTAssertEqual([].json, JSON([]))
     XCTAssertEqual([:], JSON(any: [:]))
-	}
-	
-	func testDeserialize() {
+  }
+  
+  func testDeserialize() {
     
-		XCTAssertEqual("1234.5678", String(JSON("1234.5678")))
-		
-		XCTAssertEqual(false, Bool(JSON(false)))
-		
-		XCTAssertEqual(123, Int(JSON(123)))
-		XCTAssertEqual(Int32(123), Int32(JSON(123)))
-		XCTAssertEqual(Int64(123), Int64(JSON(123)))
-		XCTAssertEqual(Float(1234.567), Float(JSON(1234.567)))
-		XCTAssertEqual(Double(1234.5678), Double(JSON(1234.5678)))
+    XCTAssertEqual("1234.5678", String(JSON("1234.5678")))
+    
+    XCTAssertEqual(false, Bool(JSON(false)))
+    
+    XCTAssertEqual(123, Int(JSON(123)))
+    XCTAssertEqual(Int32(123), Int32(JSON(123)))
+    XCTAssertEqual(Int64(123), Int64(JSON(123)))
+    XCTAssertEqual(Float(1234.567), Float(JSON(1234.567)))
+    XCTAssertEqual(Double(1234.5678), Double(JSON(1234.5678)))
     
     XCTAssertEqual([1,2,3], [Int](JSON([1,2,3]))!)
-		XCTAssertEqual([123,4,5,6], [Any](JSON([123,4,5,6]))! as! [Int])
+    XCTAssertEqual([123,4,5,6], [Any](JSON([123,4,5,6]))! as! [Int])
     
     XCTAssertEqual(["aaa": 111], [String: Int](JSON(["aaa": 111]))!)
     XCTAssertEqual(["aaa": 111, "bbb": 222], [String: Any](JSON(["aaa": 111, "bbb": 222]))! as! [String: Int])
     
-		XCTAssertEqual(URL(JSON("https://github.com/FrainL")),
-		               URL(string: "https://github.com/FrainL"))
-	}
+    XCTAssertEqual(URL(JSON("https://github.com/FrainL")),
+                   URL(string: "https://github.com/FrainL"))
+  }
 }

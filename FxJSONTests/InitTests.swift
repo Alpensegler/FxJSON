@@ -30,28 +30,28 @@
 import XCTest
 
 class InitTests: XCTestCase {
-	
-	lazy var data: Data = {
-		guard
+  
+  lazy var data: Data = {
+    guard
       let file = Bundle(for: InitTests.self).path(forResource: "Example", ofType: "json"),
-			let data = try? Data(contentsOf: URL(fileURLWithPath: file))
+      let data = try? Data(contentsOf: URL(fileURLWithPath: file))
       else { fatalError("Can't find the test JSON file") }
-		return data
-	}()
-	
-	func testData() {
+    return data
+  }()
+  
+  func testData() {
     let json = JSON(jsonData: data)
-		XCTAssertEqual(json["web-app"]["servlet"].asArray.count, 5)
+    XCTAssertEqual(json["web-app"]["servlet"].asArray.count, 5)
     _ = try! json.jsonData()
-	}
-	
-	func testDataMeasure() {
-		self.measure() {
-			for _ in 1...100 {
+  }
+  
+  func testDataMeasure() {
+    self.measure() {
+      for _ in 1...100 {
         _ = JSON(jsonData: self.data)
-			}
-		}
-	}
+      }
+    }
+  }
     
   func testWrongData() {
     let data = Data()
@@ -61,51 +61,51 @@ class InitTests: XCTestCase {
       guard case .encodeToData? = (error as? JSON.Error) else { XCTFail(); return }
     }
   }
-	
-	func testDic() {
-		let dic = ["one": 1, "2": "two", "arr": ["aaa", "bbb", "ccc"]] as [String : Any]
-		let json: JSON = ["one": 1, "2": "two", "arr": ["aaa", "bbb", "ccc"]]
-		XCTAssertEqual(json.object as? NSDictionary, dic as NSDictionary)
-		XCTAssertEqual(json, JSON(any: dic))
-	}
-	
-	func testArr() {
-		let arr = ["one", 123.123, "hihi hi", 4, 0.0] as [Any]
-		let json: JSON = ["one", 123.123, "hihi hi", 4, 0.0]
-		XCTAssertEqual(json.object as? NSArray , arr as NSArray)
-		XCTAssertEqual(json, JSON(any: arr))
-	}
-	
-	func testString() {
-		let s = "need to test more!😲😣😝"
-		let json: JSON = "need to test more!😲😣😝"
-		XCTAssertEqual(json.object as? String, s)
-		XCTAssertEqual(json, JSON(any: s))
-	}
-	
-	func testBool() {
-		let t = true
-		let tjson: JSON = true
-		XCTAssertEqual(tjson.object as? Bool, t)
+  
+  func testDic() {
+    let dic = ["one": 1, "2": "two", "arr": ["aaa", "bbb", "ccc"]] as [String: Any]
+    let json: JSON = ["one": 1, "2": "two", "arr": ["aaa", "bbb", "ccc"]]
+    XCTAssertEqual(json.object as? NSDictionary, dic as NSDictionary)
+    XCTAssertEqual(json, JSON(any: dic))
+  }
+  
+  func testArr() {
+    let arr = ["one", 123.123, "hihi hi", 4, 0.0] as [Any]
+    let json: JSON = ["one", 123.123, "hihi hi", 4, 0.0]
+    XCTAssertEqual(json.object as? NSArray , arr as NSArray)
+    XCTAssertEqual(json, JSON(any: arr))
+  }
+  
+  func testString() {
+    let s = "need to test more!😲😣😝"
+    let json: JSON = "need to test more!😲😣😝"
+    XCTAssertEqual(json.object as? String, s)
+    XCTAssertEqual(json, JSON(any: s))
+  }
+  
+  func testBool() {
+    let t = true
+    let tjson: JSON = true
+    XCTAssertEqual(tjson.object as? Bool, t)
     XCTAssertEqual(tjson, JSON(any: true))
-		let f = false
-		let fjson: JSON = false
-		XCTAssertEqual(fjson.object as? Bool, f)
+    let f = false
+    let fjson: JSON = false
+    XCTAssertEqual(fjson.object as? Bool, f)
     XCTAssertEqual(fjson, JSON(any: false))
-	}
-	
-	func testNumber() {
-		let json: JSON = 1234567890.123456
+  }
+  
+  func testNumber() {
+    let json: JSON = 1234567890.123456
     XCTAssertEqual(json, JSON(any: 1234567890.123456))
-		XCTAssertEqual(json.object as? Int, 1234567890)
-		XCTAssertEqual(json.object as? Double, 1234567890.123456)
-		XCTAssertEqual(json.object as? Float, 1234567890.123456)
-	}
-	
-	func testNil() {
-		let json: JSON = nil
-		XCTAssertTrue(json.isNull)
-		XCTAssertEqual(json.object as? NSNull, NSNull())
-	}
+    XCTAssertEqual(json.object as? Int, 1234567890)
+    XCTAssertEqual(json.object as? Double, 1234567890.123456)
+    XCTAssertEqual(json.object as? Float, 1234567890.123456)
+  }
+  
+  func testNil() {
+    let json: JSON = nil
+    XCTAssertTrue(json.isNull)
+    XCTAssertEqual(json.object as? NSNull, NSNull())
+  }
 }
 

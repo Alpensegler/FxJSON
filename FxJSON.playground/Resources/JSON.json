@@ -1,0 +1,25 @@
+{
+  "code": 0,
+  "data": {
+    "users": [
+      {
+        "userID": 0,
+        "name": "Admin",
+        "admin": true,
+        "website": null,
+        "signUpTime": "1996-03-12 00:00:00"
+      },
+      {
+        "userID": 1,
+        "name": "Frain",
+        "admin": false,
+        "website": "github.com/FrainL",
+        "signUpTime": "2016-04-22 21:31:31",
+        "friends": [
+          {"userID": 2, "name": "box", "admin": false},
+          {"userID": 2, "name": "sky", "admin": false}
+        ]
+      }
+    ]
+  }
+}

@@ -9,33 +9,11 @@
 import FxJSON
 import Foundation
 import UIKit
-/*:
-Assume that you have a json data like this:
-*/
-let json: JSON = [
-  "code": 0,
-  "data": [
-    "users": [
-      [
-        "userID": 0,
-        "name": "Admin",
-        "admin": true,
-        "signUpTime": "1996-03-12 00:00:00"
-      ],
-      [
-        "userID": 1,
-        "name": "Frain",
-        "admin": false,
-        "website": "https://github.com/FrainL",
-        "signUpTime": "2016-04-22 21:31:31",
-        "friends": [
-          ["userID": 2, "name": "box", "admin": false],
-          ["userID": 2, "name": "sky", "admin": false]
-        ]
-      ]
-    ]
-  ]
-]
+
+//: Assume that you have a json data like this:
+
+let data = try? Data(contentsOf: #fileLiteral(resourceName: "JSON.json"))
+let json = JSON(jsonData: data)
 
 let formatter = DateFormatter()
 formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -45,8 +23,8 @@ DateTransform.default = DateTransform.formatter(formatter)
 
 //: Struct adopting JSONDecodable
 
-struct BasicStruct : JSONDecodable {
-  let userID: Int
+struct BasicStruct: JSONDecodable {
+  let userID: Int64
   let name: String
   let admin: Bool
   let signUpTime: Date?
@@ -63,8 +41,8 @@ let admin = BasicStruct(json["data", "users", 0])
 
 //: Class adopting JSONDecodable
 
-class BasicClass : JSONDecodable, JSONEncodable {
-  let userID: Int
+class BasicClass: JSONDecodable, JSONEncodable {
+  let userID: Int64
   let name: String
   let admin: Bool
   let signUpTime: Date?
@@ -86,7 +64,7 @@ class BasicClass : JSONDecodable, JSONEncodable {
 
 let basicClass = BasicClass(json["data", "users", 0])
 
-class UserClass : BasicClass {
+class UserClass: BasicClass {
   let website: URL?
   let friends: [BasicClass]
   
@@ -110,7 +88,7 @@ userClass?.json
 //: ## 2. JSONMappable
 
 class Basic: JSONMappable {
-  var userID: Int!
+  var userID: Int64!
   var name: String!
   var admin: Bool = false
   var signUpTime: Date?
@@ -122,16 +100,17 @@ class Basic: JSONMappable {
 
 Basic(json["data", "users", 0])?.json
 
-class User : Basic {
+class User: Basic {
   var website: URL?
 	var friends: [Basic]?
 	var lastLoginTime = Date()
 	
   override func map(mapper: JSON.Mapper) {
     admin					>< mapper
-		website				<> mapper["website"]
+    website				<< mapper["website"][CustomTransform<String, String>.fromJSON { "https://\($0)" }]
 		lastLoginTime	>> mapper["lastLoginTime"]
 		signUpTime		<> mapper["signUpTime"][DateTransform.default]
+    super.map(mapper: mapper)
   }
 }
 
@@ -143,7 +122,7 @@ do {
 
 //: ## 3.  JSONConvertable、JSONTransformable
 
-extension UIColor : JSONConvertable {
+extension UIColor: JSONConvertable {
 	public static func convert(from json: JSON) -> Self? {
 		guard let hex = Int(json) else { return nil }
 		let r = (CGFloat)((hex >> 16) & 0xFF)
@@ -153,9 +132,9 @@ extension UIColor : JSONConvertable {
 	}
 }
 
-let color = UIColor(JSON(0xFF0000))
+let color = UIColor(0xFF00FF as JSON)
 
-enum ErrorCode : Int, JSONTransformable {
+enum ErrorCode: Int, JSONTransformable {
 	case noError
 	case netWorkError
 }
