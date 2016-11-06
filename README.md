@@ -1,7 +1,15 @@
+<p align="center">
+  <img src=https://raw.githubusercontent.com/FrainL/FxJSON/master/FxJSON.jpg>
+</p>
+
+<p align="center">
+<a href="#features">Features</a> | <a href="#overview">Overview</a> | <a href="#installation">Installation</a> | <a href="#usage">Usage</a> | <a href="#references">References</a> | <a href="#extend">Extend</a> | <a href="#funtional-programming">Funtional Programming</a>
+</p>
+
 # Features
 
 - [x] [快速](#它很快)
-- [x] [JSON 和自定义类型互相转化](#它韩好用)
+- [x] [JSON 和自定义类型互相转化](#它很好用)
 - [x] [Playgrounds 示例](#1-使用-playground-查看)
 - [x] [Date 转换和自定义转换方式](#4-转换)
 - [x] [所有常见类型支持](#1-supported-types)
