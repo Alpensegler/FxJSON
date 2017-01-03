@@ -17,7 +17,8 @@ let json = JSON(jsonData: data)
 
 let formatter = DateFormatter()
 formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-DateTransform.default = DateTransform.formatter(formatter)
+let transform = DateTransform.formatter(formatter)
+DateTransform.default = transform
 
 //: ## 1. JSONDecodable, JSONEncodable
 
@@ -29,11 +30,21 @@ struct BasicStruct: JSONDecodable {
   let admin: Bool
   let signUpTime: Date?
   
-  init(decode json: JSON) throws {
-    userID      = try json["userID"]<
-    name        = try json["name"]<
-    admin       = try json["admin"]<
-    signUpTime  = try json["signUpTime"]<
+//  init(decode json: JSON) throws {
+//    userID      = try json["userID"]<
+//    name        = try json["name"]<
+//    admin       = try json["admin"]<
+//    signUpTime  = try json["signUpTime"]<
+//  }
+}
+
+extension BasicStruct {
+  static func specificOptions() -> [String: SpecificOption] {
+    return [
+      "userID": ["userID", .nonNil],  // same as .index("userID")
+      "admin": [.defaultValue(true), .ignore],
+      "signUpTime": [.transform(transform), .ignoreIfNull]
+    ]
   }
 }
 
@@ -55,10 +66,10 @@ class BasicClass: JSONDecodable, JSONEncodable {
   }
   
   func encode(mapper: JSON.Mapper) {
-    mapper["userID"]              << userID
-    mapper["name"]                << name
-    mapper["admin"]               << admin
-    mapper[nonNull: "signUpTime"] << signUpTime
+    mapper["userID"]                    << userID
+    mapper["name"]                      << name
+    mapper["admin"]                     << admin
+    mapper[ignoreIfNull: "signUpTime"]  << signUpTime
   }
 }
 
@@ -75,7 +86,7 @@ class UserClass: BasicClass {
   }
   
   override func encode(mapper: JSON.Mapper) {
-    mapper[nonNull: "website"]  << website
+    mapper[ignoreIfNull: "website"]  << website
     mapper["friends"]           << friends
     super.encode(mapper: mapper)
   }
@@ -85,42 +96,7 @@ let userClass = UserClass(json["data", "users", 1])
 
 userClass?.json
 
-//: ## 2. JSONMappable
-
-class Basic: JSONMappable {
-  var userID: Int64!
-  var name: String!
-  var admin: Bool = false
-  var signUpTime: Date?
-  
-  required init() {}
-	
-	func map(mapper: JSON.Mapper) { }
-}
-
-Basic(json["data", "users", 0])?.json
-
-class User: Basic {
-  var website: URL?
-	var friends: [Basic]?
-	var lastLoginTime = Date()
-	
-  override func map(mapper: JSON.Mapper) {
-    admin					>< mapper
-    website				<< mapper["website"][CustomTransform<String, String>.fromJSON { "https://\($0)" }]
-		lastLoginTime	>> mapper["lastLoginTime"]
-		signUpTime		<> mapper["signUpTime"][DateTransform.default]
-    super.map(mapper: mapper)
-  }
-}
-
-do {
-	let user = try User(throws: json["data", "users", 1])
-} catch {
-	print(error)
-}
-
-//: ## 3.  JSONConvertable、JSONTransformable
+//: ## 3.  JSONConvertable、JSONCodable
 
 extension UIColor: JSONConvertable {
 	public static func convert(from json: JSON) -> Self? {
@@ -134,7 +110,7 @@ extension UIColor: JSONConvertable {
 
 let color = UIColor(0xFF00FF as JSON)
 
-enum ErrorCode: Int, JSONTransformable {
+enum ErrorCode: Int, JSONCodable {
 	case noError
 	case netWorkError
 }

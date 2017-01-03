@@ -10,11 +10,12 @@
 
 - [x] [快速](#它很快)
 - [x] [JSON 和自定义类型互相转化](#它很好用)
+- [x] [全面的转化选项](#它很全面)
 - [x] [Playgrounds 示例](#1-使用-playground-查看)
 - [x] [Date 转换和自定义转换方式](#4-转换)
 - [x] [所有常见类型支持](#1-supported-types)
 - [x] [全面灵活，面向协议](#2-protocols)
-- [x] [Swifty 的错误处理](#3-errors)
+- [x] [Swifty 的错误处理](#4-errors)
 - [x] [与多个主流库一同使用](#extend)
 - [x] [支持函数式编程](#funtional-programming)
 
@@ -25,57 +26,60 @@
 
 这里用了和  [JASON](https://github.com/delba/JASON) 相同的 [benchmarks](https://github.com/delba/JASON/tree/benchmarks)（改成了 Swift 3 的语法），见 [PerformanceTests](https://github.com/FrainL/FxJSON/blob/master/FxJSONTests/PerformanceTests.swift) 。
 
-|            |         100         |        1000        |       10000        |    Δ    |
-| ---------- | :-----------------: | :----------------: | :----------------: | :-----: |
-| FxJSON     | 0.002sec(21% STDEV) | 0.017sec(9% STDEV) | 0.170sec(9% STDEV) |    1    |
-| SwiftyJSON | 0.007sec(16% STDEV) | 0.075sec(8% STDEV) | 0.678sec(8% STDEV) | 3.5~4.4 |
-| JASON      | 0.009sec(10% STDEV) | 0.083sec(3% STDEV) | 0.852sec(6% STDEV) | 4.5~5.0 |
+|            |         100          |        1000         |        10000        |    Δ    |
+| ---------- | :------------------: | :-----------------: | :-----------------: | :-----: |
+| FxJSON     | 0.002sec (21% STDEV) | 0.017sec (9% STDEV) | 0.170sec (9% STDEV) |    1    |
+| SwiftyJSON | 0.007sec (16% STDEV) | 0.075sec (8% STDEV) | 0.678sec (8% STDEV) | 3.5~4.4 |
+| JASON      | 0.009sec (10% STDEV) | 0.083sec (3% STDEV) | 0.852sec (6% STDEV) | 4.5~5.0 |
 
 #### 它很好用
 
-使用  `JSONMappable `协议 ，不用继承自 `NSObject` ，不用必须写一个 `mapping`  函数，FxJSON 默认为你支持从 `JSON` 到该结构的转化，不管是 `Class`（支持[继承](#2-jsonmappable)） 还是 `Struct` （建议你在 [Playgrounds](#1-使用-playground-查看) 中查看）。
+使用 `JSONCodable` 协议配合 `Struct` ，不用继承自 `NSObject` ，不用实现一个  `init()` ，不用必须写一个 `mapping`  函数，不必声明所有的属性都为  `var` ，FxJSON 默认为你支持从 `JSON` 到该结构的转化。 `Class` 也同样支持（支持[继承](#2-jsonmappable)），建议你在 [Playgrounds](#1-使用-playground-查看) 中查看。
 
 ```swift
-//只需实现 init() 即可默认通过 Mirror 转换
-struct User : JSONMappable {
-  var userID: Int64!
-  var name: String!
-  var admin: Bool = false
-  var website: URL?				//URL 默认转换
-  var lastLogin = Date()		//Date 通过 DateTransform.default 转换
-  var friends: [User]?			//自定义类型支持了协议也可以转换
+struct User: JSONCodable {		//只需 JSONCodable 即可默认支持
+  let userID: Int64
+  let name: String
+  let admin: Bool
+  let website: URL?				//URL 默认转换
+  let lastLogin: Date			//Date 通过 DateTransform.default 转换
+  let friends: [User]			//自定义类型支持了协议也可以转换
 }
 ```
 
-或者你也可以用 `map` 函数自定义一些属性转换方式（可选）。
+#### 它很全面
+
+或者你也可以用 `static func specificOptions() -> [String: SpecificOption]` 函数自定一些属性转换方式（可选，详见 [Options](#3-options)）。
 
 ```swift
-let webTransform = CustomTransform<String, String>.fromJSON { "https://\($0)" }
+let webTransform = CustomTransform<String, String>.fromJSON { "https://\($0)" } //自定义转化
 let dateTransform = DateTransform.timeIntervalSince(.year1970) //也可设置 DateTransform.default
 
-extension User {  
-  mutating func map(mapper: JSON.Mapper) {
-    admin		>< mapper								// >< 表示忽略该属性
-    website		<< mapper["website"][webTransform]		// << 表示仅从 JSON 转换到 object
-    lastLogin	>> mapper["lastLogin"][dateTransform]	// >> 表示仅从 object 转换到 JSON
-    friends		<> mapper[nonNull: "friends"]			// <> 表示和 JSON 互相转换
-    //nonNull 参数表示转化为 null 的时候，不插入 JSON
+extension User {
+  static func specificOptions() -> [String: SpecificOption] {
+    return [
+      "id": "userID",	//或者用 .index(["ids", 0]) 下标示地获取嵌套值
+      "website": [.transform(webTransform), .ignoreIfNull],					
+      "lastLogin": [.defaultValue(Date()), .transform(dateTransform)],
+      "friends": .nonNil
+    ]
   }
 }
 ```
 
-除此之外，还有许多其他的 [Protocol](#2-protocols) 来满足属性不可变、`enum` 默认支持、系统自带类类型支持等需求。
+除此之外，FxJSON 提供对 `enum` 默认支持以及一个用于支持自带引用类型的 `JSONConvertable`，见 [Protocols](#2-protocols) 。
 
 #### 它很优雅
 
 现在你就可以和[其他支持的类型](#1-supported-types)一样通过下面这种方式来从 `JSON` 转换：
 
 ```swift
-let json = JSON(jsonData: jsonData) 			// Data?
-let json = JSON(jsonString: jsonString)			// String?
-if let user = User(json["data", "users", 1]) {	// 支持地址式下标
+let json = JSON(jsonData: jsonData) 				// Data?
+let json = JSON(jsonString: jsonString)				// String?
+if let user = User(json["data", "users", 1]) {		// 支持地址式下标
   // do some thing with user
 }
+let users = [User](nonNil: json["data", "users"])	// nonNil 表示得到不为空的结果
 ```
 
 或者直接从 `Data?` 或 `JSON` 形式的 `String?` 转换：
@@ -86,11 +90,11 @@ if let dict = try? [String: Any](jsonData: jsonData) {
 }
 ```
 
-或者使用带非常 Swifty 的[错误处理](#3-errors)方式的 `throws` 转换：
+或者使用带非常 Swifty 的[错误处理](#4-errors)方式的 `decode` 转换：
 
 ```swift
 do {
-  let user = try User(throws: json["data", "users", 2])
+  let user = try User(decode: json["data", "users", 2])
 } catch let JSON.Error.outOfBounds(arr: arr, index: index) {
   // do some thing
 }
@@ -146,9 +150,9 @@ To use this library in your project manually you may:
    4. [转换](#4-转换)
    5. [创建 JSON](#5-创造-json)
 3. [使用 Protocol](#3-使用协议)
-   1. [JSONDecodable, JSONEncodable](#1-jsondecodable-jsonencodable)
-   2. [JSONMappable](#2-jsonmappable)
-   3. [JSONConvertable, JSONTransformable](#3-jsonconvertable-jsontransformable)
+   1. [JSONDecodable](#1-jsondecodable)
+   2. [JSONEncodable](#2-jsonencodable)
+   3. [JSONConvertable](#3-jsonconvertable)
 
 ### 1. 使用 playground 查看
 
@@ -172,7 +176,15 @@ let json = JSON(jsonString: jsonString)		//String?
 
 #### 2. 获取数据
 
-FxJSON 支持地址式的下标。
+`JSON` 实际上是一个 `Enum` ，你可以直接用匹配模式获取数据。
+
+```swift
+if case let .string(name) = json {
+  //do some thing with name
+}
+```
+
+支持类似 `SwiftyJSON` 地址式的下标。
 
 ```swift
 json["code"]
@@ -192,14 +204,14 @@ if let code = Int(json["code"]) {
 let whatsUp = String(json[path]["whatsUp"])
 ```
 
-使用 `SupportedType(nonNil: json)` 的形式可以获取非 `Optional` 数据，需要类型有默认值，见[类型支持](#1-supported-types)。
+使用 `SupportedType(nonNil: json)` 的形式可以获取非 `Optional` 数据，需要类型实现了 `DefaultInitable` ，见[类型支持](#1-supported-types)。
 
 ```swift
 let userID = Int(nonNil: json[path, "userID"])
 let name = String(nonNil: json[path, "name"])
 ```
 
-使用 `SupportedType(throws: json)`  的形式的初始化带有错误处理。
+使用 `SupportedType(decode: json)`  的形式的初始化带有错误处理。
 
 ```swift
 let admin = try Bool(throws: json[path, "admin"])
@@ -276,7 +288,7 @@ let from = CustomTransform<String?, String>.fromJSON {
 let website = URL(json[path]["website"][from])
 
 do {
-  let code = try Int(throws: json["code"][from])
+  let code = try Int(decode: json["code"][from])
 } catch let JSON.Error.customTransfrom(source: any) {
   //do some thing
 }
@@ -294,7 +306,7 @@ let userJSON: JSON = [
 ]
 ```
 
-使用操作符 `<<`（ `nonNull` 表示右边转化为 `null` 时不插入 `JSON` ）：
+使用操作符 `<<`（ `ignoreIfNull` 表示右边转化为 `null` 时不插入 `JSON` ）：
 
 ```swift
 let to = CustomTransform<String, String>.toJSON {
@@ -305,30 +317,56 @@ let createJSON = JSON {
   $0["code"]             << code
   $0["data", "users"][0] << user
   $0[path]               << JSON {
-    $0                     << userJSON
-    $0[nonNull: "whatsUp"] << whatsUp
-    $0["website"][to]      << website
-    $0["signUpTime"]       << signUpTime
-    $0["friends"]          << friends
+    $0                     		<< userJSON
+    $0[ignoreIfNull: "whatsUp"] << whatsUp
+    $0["website"][to]      		<< website
+    $0["signUpTime"]      		<< signUpTime
+    $0["friends"]         		<< friends
   }
 }
 ```
 
 ### 3. 使用协议
 
-#### 1. JSONDecodable, JSONEncodable 
+`JSONCodable` 实际上是 `JSONDecodable & JSONEncodable` 的别名。
 
-使用 `JSONDecodable` 可以将 `JSON` 数据转化为自定义数据（自定义 `Class` 需要再 init 前加上  `required` ）。
+#### 1. JSONDecodable  
 
-使用 `<` 后置操作符利用类型匹配调用 `init(throws json: JSON)` 。
+`struct` 可以默认支持，`class` 需要多实现一个 `DefaultInitable` ，若 `enum` 为  `RawRepresentable` 且 ` RawValue ` 也是支持的类型，也能得到默认的支持。
+
+使用 `JSONDecodable` 可以将 `JSON` 数据转化为自定义数据。不需要任何其他操作， FxJSON 根据你的参数名使用指针操作默认实现转换。
 
 ```swift
-struct BasicStruct: JSONDecodable {
+struct BasicStruct {
   let userID: Int64
   let name: String
   let admin: Bool
   let signUpTime: Date?
-  
+}
+
+extension struct BasicStruct: JSONDecodable { }
+
+let admin = BasicStruct(json["data", "users", 0])
+```
+
+当然你也可以使用 `static func specificOptions() -> [String: SpecificOption]` 来指定特定参数的转换方式，详见[Options](#3-options)：
+
+```swift
+extension BasicStruct {
+  static func specificOptions() -> [String: SpecificOption] {
+    return [
+      "userID": ["userID", .nonNil],  // same as .index("userID")
+      "admin": .defaultValue(true),
+      "signUpTime": .transform(transform)
+    ]
+  }
+}
+```
+
+当然你也可以自己实现 `init(decode json: JSON) throws`  。使用 `<` 后置操作符利用类型匹配调用 `init(decode json: JSON)` 来轻松做到这一点 。
+
+```swift
+extension BasicStruct: JSONDecodable {
   init(decode json: JSON) throws {
     userID      = try json["userID"]<
     name        = try json["name"]<
@@ -336,9 +374,39 @@ struct BasicStruct: JSONDecodable {
     signUpTime  = try json["signUpTime"]<
   }
 }
-
-let admin = BasicStruct(json["data", "users", 0])
 ```
+
+类类型如果要默认实现，需额外实现一个 protocol `DefaultInitable` （需实现一个 `init()` 并加上  `required` ）。否则将会运行时报错。
+
+```swift
+class BasicClass: JSONDecodable, DefaultInitable {
+  let userID: Int64 = 0
+  let name: String = ""
+  let admin: Bool = true
+  let signUpTime: Date? = nil
+  
+  required init() { }
+}
+```
+
+同样，你也可以使用 `static func specificOptions() -> [String: SpecificOption]` 来指定特定参数的转换方式，和 `struct` 中一样。
+
+如果是继承了一个 `JSONDecodable` ，你同样只需要为新的参数添加默认值即可。若要增加新的 `SpecificOption` ，需要将父类  `static func specificOptions() -> [String: SpecificOption]` 中的 `static` 改成 `class` 并在子类中重写。
+
+```swift
+class UserClass: BasicClass {
+  let website: URL?
+  let friends: [BasicClass]
+  
+  override class func specificOptions() -> [String: SpecificOption] {
+    var option = super.specificOptions()
+    option["website"] = .transform(customTransform)
+    return option
+  }
+}
+```
+
+同样你也可以自己实现，（需要在 init 前加上  `required` ）。
 
 如果是继承了一个 `JSONDecodable` 的话，需要在 `init` 最后加上 `try super.init(decode: json)`
 
@@ -355,82 +423,58 @@ class UserClass: BasicClass {
 }
 ```
 
-使用 `JSONEncodable` 可以让自定义类型支持转化为 `JSON` （ `Class` 和 `Struct` 都是一样）。
+#### 2. JSONEncodable
 
-默认通过 `Mirror` 实现。如果你想更加详细地定义，你可以使用 `encode(mapper:)` 。和[创造 JSON](#5-创造-json)一样，使用 `<<` 操作符即可：
+使用 `JSONEncodable` 可以让自定义类型支持转化为 `JSON` （ `Class` 和 `Struct` 都是一样，若 `enum` 为  `RawRepresentable` 且 ` RawValue ` 也是支持的类型，也能得到默认的支持。）同样默认通过指针操作实现。
+
+```swift
+extension BasicStruct: JSONEncodable { }
+```
+
+当然也支持指定特定参数的转换方式。
+
+```
+extension BasicStruct {
+  static func specificOptions() -> [String: SpecificOption] {
+    return [
+      "userID": "userID",  // same as .index("userID")
+      "admin": .ignore,
+      "signUpTime": [.transform(transform), .ignoreIfNull]
+    ]
+  }
+}
+```
+
+同样，`class` 若要支持继承，只需把 `static` 改成 `class` 就能在子类中重写。
+
+如果你想更加详细地定义，你可以使用 `encode(mapper:)` 。和[创造 JSON](#5-创造-json)一样，使用 `<<` 操作符即可：
 
 ```swift
 extension BasicStruct: JSONEncodable {
   func encode(mapper: JSON.Mapper) {
-    mapper["userID"]              << userID
-    mapper["name"]                << name
-    mapper["admin"]               << admin
-    mapper[nonNull: "signUpTime"] << signUpTime
+    mapper["userID"]             		<< userID
+    mapper["name"]                		<< name
+    mapper["admin"]              		<< admin
+    mapper[ignoreIfNull: "signUpTime"] 	<< signUpTime
   }
 }
 
 try basicStruct.jsonData()
 ```
 
-如果是继承了一个 `JSONEncodable` ，则需要 `override` `encode(mapper:)` 然后在最后加上 `super.encode(mapper: mapper)`。
+如果是 `class` 继承了一个 `JSONEncodable` ，则需要 `override` `encode(mapper:)` 然后在最后加上 `super.encode(mapper: mapper)`。
 
 ```swift
 class UserClass: BasicClass {
   override func encode(mapper: JSON.Mapper) {
-    mapper[nonNull: "website"]  << website
-    mapper["friends"]           << friends
+    mapper[ignoreIfNull: "website"] << website
+    mapper["friends"]           	<< friends
     super.encode(mapper: mapper)
   }
 }
 ```
 
-#### 2. JSONMappable
-
-使用 `JSONMappable` 能让自定义类型支持和 `JSON` 互相转换，需要保证每个值都有默认值或者为 `Optional` 或者 `ImplicitlyUnwrappedOptional` 且声明为 `var`（如果是 `Class` 还需要像下面那样加上一句 `required init() {}`），剩下的 FxJSON 会为你提供默认实现。
-
-```
-class Basic: JSONMappable {
-  var userID: Int64!
-  var name: String!
-  var admin: Bool = false
-  var signUpTime: Date?
-  
-  required init() {}
-}
-```
-
-当然你也可以自己指定如何转换，使用 `map`（自定义类型为 `Class`时，需要删除 `mutating`）：
-
-```swift
-extension User {  
-  mutating func map(mapper: JSON.Mapper) {
-    admin		>< mapper								// >< 表示忽略该属性
-    website		<< mapper["website"][webTransform]		// << 表示仅从 JSON 转换到 object
-    lastLogin	>> mapper["lastLogin"][dateTransform]	// >> 表示仅从 object 转换到 JSON
-    friends		<> mapper[nonNull: "friends"]			// <> 表示和 JSON 互相转换
-  }
-}
-```
-
-当你继承了一个实现了 `JSONMappable` 的类时，你需要父类实现了 `encode(mapper:)` ，还需要在函数前加上 `override` ：
-
-```swift
-class User: Basic {
-  var website: URL?
-	var friends: [Basic]?
-	var lastLoginTime = Date()
-	
-  override func map(mapper: JSON.Mapper) {
-    admin			>< mapper
-    website			<< mapper["website"][CustomTransform<String, String>.fromJSON { "https://\($0)" }]
-	lastLoginTime	>> mapper["lastLoginTime"]
-	signUpTime		<> mapper["signUpTime"][DateTransform.default]
-    super.map(mapper: mapper)
-  }
-}
-```
-
-#### 3. JSONConvertable, JSONTransformable
+#### 3. JSONConvertable
 
 使用 `JSONConvertable` 来使引用类型支持从 `JSON` 转化：
 
@@ -448,15 +492,7 @@ extension UIColor: JSONConvertable {
 let color = UIColor(0xFF00FF as JSON)	//purpel color
 ```
 
-使用 `JSONTransformable` 来为 `RawRepresentable` 的类型提供默认支持（`RawValue` 需要是支持的类型）。
-
-```swift
-enum ErrorCode: Int, JSONTransformable {
-	case noError
-	case netWorkError
-}
-```
-除此之外，剩余的 Protocol 你可以从 References 中的 [Protocols](#2-protocols) 中找到。
+除此之外，知道这些已经足够，但剩余的 Protocol 你可以从 [Protocols](#2-protocols) 中找到。
 
 ## References
 
@@ -483,18 +519,31 @@ enum ErrorCode: Int, JSONTransformable {
 
 #### 2. Protocols
 
-| Protocol             | 需要实现的方法                                  | 继承的 Protocol                     | 说明                                       |
-| -------------------- | ---------------------------------------- | -------------------------------- | ---------------------------------------- |
-| JSONSerializable     | var json: JSON { get }                   | 无                                | 该协议让类型支持转换成 JSON，当类型为 RawRepresentable 且 RawValue 为支持的类型时默认支持 |
-| JSONDeserializable   | init?(_ json: JSON)                      | 无                                | 该协议让类型支持从 JSON 转换，当类型为 RawRepresentable 且 RawValue 为支持的类型时时默认支持 |
-| JSONTransformable    | var json: JSON { get }; init?(_ json: JSON) | 无                                | JSONDeserializable & JSONSerializable    |
-| DefaultInitializable | init()                                   | 无                                | 支持该协议并支持 JSONDeserializable 则可以使用 init(noneNull json: JSON) 方法 |
-| JSONConvertable      | static func convert(from json: JSON) -> Self? | JSONDeserializable               | 该协议让引用类型支持从 JSON 转换                      |
-| JSONDecodable        | init(decode json: JSON) throws           | JSONDeserializable               | 该协议让类型支持从 JSON 转换                        |
-| JSONEncodable        | func encode(mapper: JSON.Mapper) // 可选   | JSONSerializable                 | 该协议让类型支持从 JSON 转换                        |
-| JSONMappable         | init(); mutating func map(mapper: JSON.Mapper) // 可选 | DefaultInitializable、JSONCodable | 该协议让自定义类型支持与 JSON 互相转换                   |
+| Protocol           | 需要实现的方法                                  | 继承的 Protocol       | 说明                                       |
+| ------------------ | ---------------------------------------- | ------------------ | ---------------------------------------- |
+| JSONSerializable   | var json: JSON { get }                   | 无                  | 该协议让类型支持转换成 JSON                         |
+| JSONDeserializable | init?(_ json: JSON)                      | 无                  | 该协议让类型支持从 JSON 转换                        |
+| JSONTransformable  | var json: JSON { get }; init?(_ json: JSON) | 无                  | JSONDeserializable & JSONSerializable    |
+| DefaultInitable    | init()                                   | 无                  | 支持该协议并支持 JSONDeserializable 则可以使用 init(noneNull json: JSON) 方法 |
+| JSONConvertable    | static func convert(from json: JSON) -> Self? | JSONDeserializable | 该协议让引用类型支持从 JSON 转换                      |
+| JSONDecodable      | init(decode json: JSON) throws // 可选     | JSONDeserializable | 该协议让类型支持从 JSON 转换，当类型为 RawRepresentable 且 RawValue 为支持的类型时默认支持 |
+| JSONEncodable      | func encode(mapper: JSON.Mapper) // 可选   | JSONSerializable   | 该协议让类型支持从 JSON 转换，当类型为 RawRepresentable 且 RawValue 为支持的类型时时默认支持 |
+| JSONCOdable        | init(decode json: JSON) throws; func encode(mapper: JSON.Mapper) // 可选 | 无                  | JSONDecodable & JSONEncodable            |
 
-#### 3. Errors
+#### 3. Options
+
+| option        | 参数         | 生效     | 说明                                       |
+| ------------- | ---------- | ------ | ---------------------------------------- |
+| .index        | JSON.Index | both   | 替代属性名来获取 JSON 数据和生成 JSON 数据              |
+| .transform    | Transform  | both   | 自定义转换方式                                  |
+| .defaultValue | Any        | decode | 当 JSON 中获取数据失败，不 throw 并使用该数据作为值         |
+| .nonNil       | ×          | decode | 效果同 init(nonNil: json)，需要是 `DefaultInitable` 参数 |
+| .ignore       | ×          | encode | 转换为 JSON 时忽略这个属性                         |
+| .ignoreIfNull | ×          | encode | 转换为 JSON 为 null 时忽略这个属性                  |
+
+**note:**  × 表示无参数
+
+#### 4. Errors
 
 | JSON.Error       | Associated Values                  |
 | ---------------- | ---------------------------------- |
@@ -534,7 +583,7 @@ struct Model: Object, JSONDecodable {
 
 ## Funtional Programming
 
-`JSON` 类型是一个 Monad 和 Funtor，除了作为 `MutableCollection` 的默认的 `map` 、`flatMap` 方法以外，FxJSON 还有如下 `map` 和 `flatMap`：
+`JSON` 类型是一个 Monad 和 Funtor，除了作为 `MutableCollection` 的默认的 `map` 、`flatMap` 方法以外，FxJSON 还实现了如下 `map` 和 `flatMap`：
 
 ```swift
 public func map<T: JSONDeserializable, U: JSONSerializable>(_ transform: (T) throws -> U) rethrows -> JSON { }

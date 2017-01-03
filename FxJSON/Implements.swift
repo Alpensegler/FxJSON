@@ -41,19 +41,19 @@ extension JSON: JSONSerializable {
   }
   
   public init(operate: (Mapper) -> ()) {
-    let mapper = Mapper(json: .object([:]), isCreating: true)
+    let mapper = Mapper(json: .object([:]))
     operate(mapper)
     self = mapper.json
   }
   
   public func transformed(operate: (Mapper) -> ()) -> JSON {
-    let mapper = Mapper(json: self, isCreating: true)
+    let mapper = Mapper(json: self)
     operate(mapper)
     return(mapper.json)
   }
   
   public func decode<T: JSONDeserializable>() throws -> T {
-    return try T(throws: self)
+    return try T(decode: self)
   }
   
   public func map<T: JSONDeserializable, U: JSONSerializable>(
@@ -69,7 +69,7 @@ extension JSON: JSONSerializable {
 
 //MARK: - JSONTransformable
 
-extension String: JSONTransformable, DefaultInitializable {
+extension String: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard case let .string(str) = json else { return nil }
@@ -81,7 +81,7 @@ extension String: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Bool: JSONTransformable, DefaultInitializable {
+extension Bool: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard case let .bool(boo) = json else { return nil }
@@ -93,7 +93,7 @@ extension Bool: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Float: JSONTransformable, DefaultInitializable {
+extension Float: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard case let .number(num) = json else { return nil }
@@ -105,7 +105,7 @@ extension Float: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Double: JSONTransformable, DefaultInitializable {
+extension Double: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard case let .number(num) = json else { return nil }
@@ -117,7 +117,7 @@ extension Double: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Int: JSONTransformable, DefaultInitializable {
+extension Int: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard case let .number(num) = json else { return nil }
@@ -129,7 +129,7 @@ extension Int: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Int8: JSONTransformable, DefaultInitializable {
+extension Int8: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard case let .number(num) = json else { return nil }
@@ -141,7 +141,7 @@ extension Int8: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Int16: JSONTransformable, DefaultInitializable {
+extension Int16: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard case let .number(num) = json else { return nil }
@@ -153,7 +153,7 @@ extension Int16: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Int32: JSONTransformable, DefaultInitializable {
+extension Int32: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard case let .number(num) = json else { return nil }
@@ -165,7 +165,7 @@ extension Int32: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Int64: JSONTransformable, DefaultInitializable {
+extension Int64: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard case let .number(num) = json else { return nil }
@@ -239,7 +239,7 @@ extension Optional: JSONTransformable {
   }
 }
 
-extension ImplicitlyUnwrappedOptional: JSONTransformable, DefaultInitializable {
+extension ImplicitlyUnwrappedOptional: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard let T = Wrapped.self as? JSONDeserializable.Type else { return nil }
@@ -255,7 +255,7 @@ extension ImplicitlyUnwrappedOptional: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Set: JSONTransformable, DefaultInitializable {
+extension Set: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     self.init()
@@ -279,7 +279,7 @@ extension Set: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Array: JSONTransformable, DefaultInitializable {
+extension Array: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard let arr = json.array else { return nil }
@@ -305,7 +305,7 @@ extension Array: JSONTransformable, DefaultInitializable {
   }
 }
 
-extension Dictionary: JSONTransformable, DefaultInitializable {
+extension Dictionary: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard let dict = json.dict, Key.self is String.Type else { return nil }

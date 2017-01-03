@@ -120,7 +120,7 @@ public extension JSON {
     
     case initalize(error: Swift.Error)
     case unSupportType(type: Any.Type)
-    case encodeToData(wrongObject: Any)
+    case encodeToJSON(wrongObject: Any)
     case notExist(dict: [String: Any], key: String)
     case wrongType(subscript: JSON, key: Index)
     case outOfBounds(arr: [Any], index: Int)
@@ -134,8 +134,8 @@ public extension JSON {
         return "Initalize error, \(error))"
       case .unSupportType(type: let type):
         return "Type: \(type) is unsupport"
-      case .encodeToData(wrongObject: let any):
-        return "Wrong object: \(any) encoding to JSON data"
+      case .encodeToJSON(wrongObject: let any):
+        return "Error when encoding to JSON: \(any)"
       case .notExist(dict: let dict, key: let key):
         return "Key: \"\(key)\" not exist, dict is: \(dict)"
       case .wrongType(subscript: let json, key: let key):
@@ -234,31 +234,20 @@ public extension JSON {
   
   func jsonData(withOptions opt: JSONSerialization.WritingOptions = []) throws -> Data {
     guard JSONSerialization.isValidJSONObject(object) else {
-      throw error ?? Error.encodeToData(wrongObject: object)
+      throw error ?? Error.encodeToJSON(wrongObject: object)
     }
     return try JSONSerialization.data(withJSONObject: object, options: opt)
   }
     
   func jsonString(withOptions opt: JSONSerialization.WritingOptions = [],
-                  encoding ecd: String.Encoding = String.Encoding.utf8) -> String {
+                  encoding ecd: String.Encoding = String.Encoding.utf8) throws -> String {
     switch self {
     case .object, .array:
-      do {
-        let data = try self.jsonData(withOptions: opt)
-        return String(data: data, encoding: ecd) ?? "Encode error"
-      } catch {
-        return "\(error)"
-      }
-    case .string(let string):
-      return "\"\(string)\""
-    case .number(let number):
-      return number.description
-    case .bool(let bool):
-      return bool.description
-    case .error(let error):
-      return "\(error)"
-    case .null:
-      return "null"
+      let data = try self.jsonData(withOptions: opt)
+      if let jsonSrt = String(data: data, encoding: ecd) { return jsonSrt }
+      throw Error.encodeToJSON(wrongObject: ecd)
+    default:
+      throw error ?? Error.encodeToJSON(wrongObject: object)
     }
   }
 }
@@ -268,11 +257,11 @@ public extension JSON {
 extension JSON: CustomStringConvertible, CustomDebugStringConvertible {
     
   public var description: String {
-    return jsonString(withOptions: .prettyPrinted)
+    return (try? jsonString(withOptions: .prettyPrinted)) ?? "\(object)"
   }
   
   public var debugDescription: String {
-    return type + ": " + jsonString()
+    return (try? type + ": " + jsonString()) ?? "\(object)"
   }
 }
 

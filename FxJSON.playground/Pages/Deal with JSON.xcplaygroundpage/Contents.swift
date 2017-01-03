@@ -42,11 +42,11 @@ let whatsUp = String(json[path]["whatsUp"])
 let userID = Int(nonNil: json[path, "userID"])
 let name = String(nonNil: json[path, "name"])
 
-//: Using `throws` param
-let admin = try Bool(throws: json[path, "admin"])
+//: Using `decode` param
+let admin = try Bool(decode: json[path, "admin"])
 
 do {
-  let notExist = try Int(throws: json["notExist"])
+  let notExist = try Int(decode: json["notExist"])
 } catch let JSON.Error.notExist(dict: dict, key: key) {
   dict
 }
@@ -96,7 +96,7 @@ let from = CustomTransform<String?, String>.fromJSON {
 let website = URL(json[path]["website"][from])
 
 do {
-	let code = try Int(throws: json["code"][from])
+	let code = try Int(decode: json["code"][from])
 } catch let JSON.Error.customTransfrom(source: any) {
 	any
 }
@@ -119,7 +119,7 @@ let createJSON = JSON {
 	$0["data", "users"][0] << user
 	$0[path]               << JSON {
 		$0                     << userJSON
-		$0[nonNull: "whatsUp"] << whatsUp
+		$0[ignoreIfNull: "whatsUp"] << whatsUp
 		$0["website"][to]      << website
 		$0["signUpTime"]       << signUpTime
 		$0["friends"]          << friends

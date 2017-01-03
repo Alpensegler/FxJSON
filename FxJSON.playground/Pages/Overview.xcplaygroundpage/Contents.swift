@@ -18,31 +18,36 @@ let jsonData = try Data(contentsOf: #fileLiteral(resourceName: "JSON.json"))
 let jsonString = String(data: jsonData, encoding: .utf8)
 
 //: You only need to adopt `JSONMappable` and implement init()
-struct User : JSONMappable {
-  var userID: Int64!
-  var name: String!
-  var admin: Bool = false
-  var website: URL?         //URL is supported
-  var lastLogin = Date()		//Date is supported through DateTransform.default
-  var friends: [User]?			//Also your own type
+struct User: JSONCodable {
+  let id: Int64
+  let name: String
+  let admin: Bool
+  let website: URL?       //URL is supported
+  let lastLogin: Date     //Date is supported through DateTransform.default
+  let friends: [User]     //Also your own type
 }
 //: Or specify the way transforming (optional)
 let webTransform = CustomTransform<String, String>.fromJSON { "https://\($0)" }
 let dateTransform = DateTransform.timeIntervalSince(.year1970) //or you can set DateTransform.default
 
 extension User {
-  mutating func map(mapper: JSON.Mapper) {
-    admin     >< mapper                             // >< means ignore it
-    website		<< mapper["website"][webTransform]		// << means only transform from JSON
-    lastLogin	>> mapper["lastLogin"][dateTransform]	// >> means only transform to JSON
-    friends		<> mapper[nonNull: "friends"]         // <> means transform between JSON
-    //nonNull param means do not insert into JSON if value transform into null
+  static func specificOptions() -> [String: SpecificOption] {
+    return [
+      "id": "userID",
+      "website": [.transform(webTransform), .ignoreIfNull],
+      "lastLogin": [.defaultValue(Date()), .transform(dateTransform)],
+      "friends": .nonNil
+    ]
   }
 }
 //: You can now use the way below to Desrialize to Object
 let json = JSON(jsonData: jsonData)
 //let json = JSON(jsonString: jsonString)
-guard let user = User(json["data", "users", 1]) else { fatalError() }
+do {
+  let user = try User(decode: json["data", "users", 1])
+} catch {
+  print(error)
+}
 
 let users = [User](nonNil: json["data", "users"])
 
@@ -53,13 +58,13 @@ if let dict = try? [String: Any](jsonData: jsonData) {
 }
 
 do {
-  let user = try User(throws: json["data", "users", 2])
+  let user = try User(decode: json["data", "users", 2])
 } catch let JSON.Error.outOfBounds(arr: arr, index: index) {
   (index, arr)
 }
 
 //: Transforming to json could be done automaticly
-user.json
+users.json
 try users.jsonData()
 try users.jsonString()
 

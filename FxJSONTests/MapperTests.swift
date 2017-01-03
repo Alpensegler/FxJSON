@@ -49,7 +49,7 @@ class MapperTests: XCTestCase {
           "str3": "日本語も同じです😝"
         ]
         $0["null"] << NSNull()
-        $0[nonNull: "nonNil"] << NSNull()
+        $0[ignoreIfNull: "nonNil"] << NSNull()
         $0["true"] << true
         $0["false"] << false
         $0["dic"] << JSON {
@@ -87,42 +87,5 @@ class MapperTests: XCTestCase {
     
     print(json["some"])
     
-    class A: JSONMappable {
-          
-      var name = ""
-      var age = 0
-      var money = 0.0
-    
-      func map(mapper: JSON.Mapper) {
-        name    >< mapper
-        age     <> mapper["sub"]["age"]
-        money   <> mapper["sub"]["money"]
-      }
-      
-      required init() {}
-    }
-    
-    class B: A {
-      let some = ""
-      
-      override func map(mapper: JSON.Mapper) {
-        super.map(mapper: mapper)
-        age << mapper["age"]
-      }
-    }
-    
-    guard let a = A(json) else { XCTFail(); return }
-    XCTAssertEqual(a.name, "")
-    XCTAssertEqual(a.age, 20)
-    XCTAssertEqual(a.money, 17000.0)
-    
-    guard case JSON.Error.notExist? = a.json["name"].error else { XCTFail(); return }
-    XCTAssertEqual(a.json["sub"]["age"], 20)
-    XCTAssertEqual(a.json["sub"]["money"], 17000.0)
-    
-    guard let b = B(json) else { XCTFail(); return }
-    XCTAssertEqual(b.some, "some")
-    XCTAssertEqual(b.age, 21)
-    XCTAssertEqual(b.money, 17000.0)
   }
 }

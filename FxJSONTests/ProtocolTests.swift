@@ -38,13 +38,13 @@ class ProtocolTests: XCTestCase {
       let age: Int
       let gender: Gender
       
-      init(decode json: JSON) throws {
-        name    = try json["name"]<
-        age     = try json["age"]<
-        gender  = try json["gender"]<
-      }
+//      init(decode json: JSON) throws {
+//        name    = try json["name"]<
+//        age     = try json["age"]<
+//        gender  = try json["gender"]<
+//      }
       
-      enum Gender: Int, JSONTransformable {
+      enum Gender: Int, JSONCodable {
         case boy
         case girl
       }

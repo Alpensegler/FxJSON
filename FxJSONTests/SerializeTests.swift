@@ -61,7 +61,7 @@ class SerializeTests: XCTestCase {
     ]
     let dict: [String: Any] = [
       "arr": ["one", 2, 3.3, Double(4)],
-      "opt": Optional<Int>.none,
+      "opt": Optional<Int>.none as Any,
       "set": set
     ]
     

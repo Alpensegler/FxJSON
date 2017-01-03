@@ -17,7 +17,7 @@
         "signUpTime": "2016-04-22 21:31:31",
         "friends": [
           {"userID": 2, "name": "box", "admin": false},
-          {"userID": 2, "name": "sky", "admin": false}
+          {"userID": 3, "name": "sky", "admin": false}
         ]
       }
     ]
