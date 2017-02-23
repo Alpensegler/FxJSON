@@ -73,14 +73,8 @@ public extension JSON {
       } else {
         self = .number(num)
       }
-    case _ as NSNull:
-      self = .null
-    case let err as Swift.Error:
-      self = .error(err)
-    case let any as JSONSerializable:
-      self = any.json
     default:
-      self = .error(Error.unSupportType(type: type(of: any)))
+      self = .null
     }
   }
   

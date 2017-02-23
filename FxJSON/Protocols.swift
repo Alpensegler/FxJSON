@@ -450,7 +450,7 @@ public struct Metadata {
   
   struct Class {
     var isa: UnsafePointer<Class>
-    var super_: UnsafePointer<Class>
+    var superIsa: UnsafePointer<Class>
     var data: (Int, Int, Int, Int32, Int32, Int32, Int16, Int16, Int32, Int32)
     var description: Int
   }
@@ -475,7 +475,8 @@ public struct Metadata {
   init(type: Any.Type) {
     let typePointer = unsafeBitCast(type, to: UnsafePointer<Structure>.self)
     if let value = Metadata.table[typePointer] {
-      self.init(kind: value.kind, properties: value.properties); return
+      self.init(kind: value.kind, properties: value.properties)
+      return
     }
     switch typePointer.pointee.kind {
     case 1:
@@ -518,7 +519,7 @@ public struct Metadata {
   static func getProperties(classTypePointer: UnsafePointer<Class>) -> [Property] {
     let intPointer = unsafeBitCast(classTypePointer, to: UnsafePointer<Int>.self)
     let typePointee = classTypePointer.pointee
-    let superPointee = typePointee.super_
+    let superPointee = typePointee.superIsa
     if unsafeBitCast(typePointee.isa, to: Int.self) == 14 || unsafeBitCast(superPointee, to: Int.self) == 0 {
       return []
     }

@@ -345,14 +345,14 @@ public func ==(lhs: JSON.Index, rhs: JSON.Index) -> Bool {
 }
 
 public func <(lhs: JSON.Index, rhs: JSON.Index) -> Bool {
-    switch (lhs, rhs) {
-    case let (.key(.key(l)), .key(.key(r))):
-        return l < r
-    case let (.key(.index(l)), .key(.index(r))):
-        return l < r
-    case let (.index(l), .index(r)):
-        return l < r
-    default:
-        return false
-    }
+  switch (lhs, rhs) {
+  case let (.key(.key(l)), .key(.key(r))):
+    return l < r
+  case let (.key(.index(l)), .key(.index(r))):
+    return l < r
+  case let (.index(l), .index(r)):
+    return l < r
+  default:
+    return false
+  }
 }

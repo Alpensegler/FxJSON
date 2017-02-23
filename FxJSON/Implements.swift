@@ -274,7 +274,7 @@ extension Set: JSONTransformable, DefaultInitable {
         if let error = json.error { throw error }
         return json.object
       }
-      return element as Any
+      throw JSON.Error.unSupportType(type: type(of: element))
     }))
   }
 }
@@ -283,12 +283,11 @@ extension Array: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard let arr = json.array else { return nil }
-    switch Element.self {
-    case let T as JSONDeserializable.Type:
+    if let any = arr as? [Element] {
+      self = any
+    } else if let T = Element.self as? JSONDeserializable.Type {
       self = arr.flatMap { T.init(JSON(any: $0)) as! Element? }
-    case _ as Any.Type:
-      self = arr as! [Element]
-    default:
+    } else {
       return nil
     }
   }
@@ -300,7 +299,7 @@ extension Array: JSONTransformable, DefaultInitable {
         if let error = json.error { throw error }
         return json.object
       }
-      return element as Any
+      throw JSON.Error.unSupportType(type: type(of: element))
     }))
   }
 }
@@ -309,12 +308,11 @@ extension Dictionary: JSONTransformable, DefaultInitable {
   
   public init?(_ json: JSON) {
     guard let dict = json.dict, Key.self is String.Type else { return nil }
-    switch Value.self {
-    case let T as JSONDeserializable.Type:
+    if let any = dict as Any as? [Key: Value] {
+      self = any
+    } else if let T = Value.self as? JSONDeserializable.Type {
       self = dict.flatMap { ($0.0 as! Key, T.init(JSON(any: $0.1)) as! Value?) }
-    case _ as Any.Type:
-      self = dict.map { ($0.0 as! Key, $0.1 as! Value) }
-    default:
+    } else {
       return nil
     }
   }
@@ -329,7 +327,7 @@ extension Dictionary: JSONTransformable, DefaultInitable {
         if let error = json.error { throw error }
         return (key as! String, json.object)
       }
-      return (key as! String, value as Any)
+      throw JSON.Error.unSupportType(type: type(of: value))
     }))
   }
 }
