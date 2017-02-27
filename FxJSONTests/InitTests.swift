@@ -58,7 +58,7 @@ class InitTests: XCTestCase {
     guard case JSON.Error.initalize? = JSON(jsonData: data).error else { XCTFail(); return }
     let json: JSON = false
     XCTAssertThrowsError(try json.jsonData()) { (error) in
-      guard case .encodeToData? = (error as? JSON.Error) else { XCTFail(); return }
+      guard case .encodeToJSON? = (error as? JSON.Error) else { XCTFail(); return }
     }
   }
   

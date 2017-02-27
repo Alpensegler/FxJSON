@@ -45,7 +45,7 @@ class SerializeTests: XCTestCase {
     XCTAssertEqual(["one", 2, 3.3, Double(4)].json,
                    JSON(["one", 2, 3.3, Double(4)]))
     
-    guard case JSON.Error.unSupportType? = Optional.some(NSValue()).json.error else {
+    guard case JSON.Error.typeMismatch? = Optional.some(NSValue()).json.error else {
       XCTFail(); return
     }
     XCTAssertEqual(Optional<Int>.none.json, JSON())

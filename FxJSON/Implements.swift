@@ -30,13 +30,13 @@ import Foundation
 
 //MARK: - JSON
 
-extension JSON: JSONSerializable {
+extension JSON: JSONEncodable {
   
   public var json: JSON {
     return self
   }
   
-  public init(_ object: @autoclosure () throws -> JSONSerializable) {
+  public init(_ object: @autoclosure () throws -> JSONEncodable) {
     do { try self = object().json } catch { self = .error(error) }
   }
   
@@ -52,27 +52,27 @@ extension JSON: JSONSerializable {
     return(mapper.json)
   }
   
-  public func decode<T: JSONDeserializable>() throws -> T {
+  public func decode<T: JSONDecodable>() throws -> T {
     return try T(decode: self)
   }
   
-  public func map<T: JSONDeserializable, U: JSONSerializable>(
+  public func map<T: JSONDecodable, U: JSONEncodable>(
     _ transform: (T) throws -> U) rethrows -> JSON {
     return try T(self).map(transform).map { $0.json } ?? self
   }
   
-  public func flatMap<T: JSONDeserializable>(
+  public func flatMap<T: JSONDecodable>(
     _ transform: (T) throws -> JSON) rethrows -> JSON {
     return try T(self).map(transform) ?? self
   }
 }
 
-//MARK: - JSONTransformable
+//MARK: - JSONCodable
 
-extension String: JSONTransformable, DefaultInitable {
+extension String: JSONCodable, DefaultInitable {
   
-  public init?(_ json: JSON) {
-    guard case let .string(str) = json else { return nil }
+  public init(decode json: JSON) throws {
+    guard case let .string(str) = json else { throw String.mismatchError(json: json) }
     self = str
   }
   
@@ -81,10 +81,10 @@ extension String: JSONTransformable, DefaultInitable {
   }
 }
 
-extension Bool: JSONTransformable, DefaultInitable {
+extension Bool: JSONCodable, DefaultInitable {
   
-  public init?(_ json: JSON) {
-    guard case let .bool(boo) = json else { return nil }
+  public init(decode json: JSON) throws {
+    guard case let .bool(boo) = json else { throw Bool.mismatchError(json: json) }
     self = boo
   }
   
@@ -93,10 +93,10 @@ extension Bool: JSONTransformable, DefaultInitable {
   }
 }
 
-extension Float: JSONTransformable, DefaultInitable {
+extension Float: JSONCodable, DefaultInitable {
   
-  public init?(_ json: JSON) {
-    guard case let .number(num) = json else { return nil }
+  public init(decode json: JSON) throws {
+    guard case let .number(num) = json else { throw Float.mismatchError(json: json) }
     self = num.floatValue
   }
   
@@ -105,10 +105,10 @@ extension Float: JSONTransformable, DefaultInitable {
   }
 }
 
-extension Double: JSONTransformable, DefaultInitable {
+extension Double: JSONCodable, DefaultInitable {
   
-  public init?(_ json: JSON) {
-    guard case let .number(num) = json else { return nil }
+  public init(decode json: JSON) throws {
+    guard case let .number(num) = json else { throw Double.mismatchError(json: json) }
     self = num.doubleValue
   }
   
@@ -117,10 +117,10 @@ extension Double: JSONTransformable, DefaultInitable {
   }
 }
 
-extension Int: JSONTransformable, DefaultInitable {
+extension Int: JSONCodable, DefaultInitable {
   
-  public init?(_ json: JSON) {
-    guard case let .number(num) = json else { return nil }
+  public init(decode json: JSON) throws {
+    guard case let .number(num) = json else { throw Int.mismatchError(json: json) }
     self = num.intValue
   }
   
@@ -129,10 +129,10 @@ extension Int: JSONTransformable, DefaultInitable {
   }
 }
 
-extension Int8: JSONTransformable, DefaultInitable {
+extension Int8: JSONCodable, DefaultInitable {
   
-  public init?(_ json: JSON) {
-    guard case let .number(num) = json else { return nil }
+  public init(decode json: JSON) throws {
+    guard case let .number(num) = json else { throw Int8.mismatchError(json: json) }
     self = num.int8Value
   }
   
@@ -141,10 +141,10 @@ extension Int8: JSONTransformable, DefaultInitable {
   }
 }
 
-extension Int16: JSONTransformable, DefaultInitable {
+extension Int16: JSONCodable, DefaultInitable {
   
-  public init?(_ json: JSON) {
-    guard case let .number(num) = json else { return nil }
+  public init(decode json: JSON) throws {
+    guard case let .number(num) = json else { throw Int16.mismatchError(json: json) }
     self = num.int16Value
   }
   
@@ -153,10 +153,10 @@ extension Int16: JSONTransformable, DefaultInitable {
   }
 }
 
-extension Int32: JSONTransformable, DefaultInitable {
+extension Int32: JSONCodable, DefaultInitable {
   
-  public init?(_ json: JSON) {
-    guard case let .number(num) = json else { return nil }
+  public init(decode json: JSON) throws {
+    guard case let .number(num) = json else { throw Int32.mismatchError(json: json) }
     self = num.int32Value
   }
   
@@ -165,10 +165,10 @@ extension Int32: JSONTransformable, DefaultInitable {
   }
 }
 
-extension Int64: JSONTransformable, DefaultInitable {
+extension Int64: JSONCodable, DefaultInitable {
   
-  public init?(_ json: JSON) {
-    guard case let .number(num) = json else { return nil }
+  public init(decode json: JSON) throws {
+    guard case let .number(num) = json else { throw Int64.mismatchError(json: json) }
     self = num.int64Value
   }
   
@@ -177,18 +177,36 @@ extension Int64: JSONTransformable, DefaultInitable {
   }
 }
 
-extension Date: JSONTransformable {
+extension Date: JSONCodable {
   
   public init?(_ json: JSON) {
-    switch (DateTransform.default, json) {
-    case (.formatter(let formatter), .string(let v)):
+    guard let dic = (try? Date(decode: json)) else { return nil }
+    self = dic
+  }
+  
+  public init(decode json: JSON) throws {
+    switch (json, DateTransform.default) {
+    case (.string(let v), .formatter(let formatter)):
       self.init()
-      guard let date = formatter.date(from: v) else { return nil }
+      guard let date = formatter.date(from: v) else {
+        throw JSON.Error.formatter(format: formatter.dateFormat, value: v)
+      }
       self = date
-    case (.timeIntervalSince(let since), .number(let v)):
+    case (.string(let v), _):
+      self.init()
+      let formatter = DateTransform.defaultDateFormatter
+      guard let date = formatter.date(from: v) else {
+        throw JSON.Error.formatter(format: formatter.dateFormat, value: v)
+      }
+      self = date
+    case (.number(let v), .timeIntervalSince(let since)):
       self.init(timeIntervalSince1970: v.doubleValue + since.timeInterval)
-    default:
-      return nil
+    case (.number(let v), _):
+      self.init(timeIntervalSince1970: v.doubleValue + DateTransform.defaultSince.timeInterval)
+    case (_, .formatter):
+      throw String.mismatchError(json: json)
+    case (_, .timeIntervalSince):
+      throw Double.mismatchError(json: json)
     }
   }
   
@@ -202,13 +220,20 @@ extension Date: JSONTransformable {
   }
 }
 
-extension URL: JSONTransformable {
+extension URL: JSONCodable {
   
-  public init?(_ json: JSON) {
-    guard let value = String(json)?
+  public init(decode json: JSON) throws {
+    guard let urlString = String(json)?
       .addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
-      else { return nil }
-    self.init(string: value)
+      else { throw String.mismatchError(json: json) }
+    if urlString.characters.isEmpty, let url = URL(string: "about://") {
+      self = url
+      return
+    }
+    guard let url = URL(string: urlString) else {
+      throw JSON.Error.other(description: "URL init error, urlString is \(urlString)")
+    }
+    self = url
   }
   
   public var json: JSON {
@@ -216,50 +241,71 @@ extension URL: JSONTransformable {
   }
 }
 
-extension NSNull: JSONSerializable {
+extension NSNull: JSONEncodable {
   
   public var json: JSON {
     return JSON()
   }
 }
 
-extension Optional: JSONTransformable {
+extension Optional: JSONCodable {
   
   public init?(_ json: JSON) {
-    guard let T = Wrapped.self as? JSONDeserializable.Type else { return nil }
+    guard let dic = (try? Optional<Wrapped>(decode: json)) else { return nil }
+    self = dic
+  }
+  
+  public init(decode json: JSON) throws {
+    guard let T = Wrapped.self as? JSONDecodable.Type else {
+      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: Wrapped.self)
+    }
     self = T.init(json) as! Wrapped?
   }
   
   public var json: JSON {
-    guard Wrapped.self is JSONSerializable.Type else {
-      return .error(JSON.Error.unSupportType(type: Wrapped.self))
+    guard Wrapped.self is JSONEncodable.Type else {
+      return .error(JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: Wrapped.self))
     }
-    if case let .some(v as JSONSerializable) = self { return v.json }
+    if case let .some(v as JSONEncodable) = self { return v.json }
     return nil
   }
 }
 
-extension ImplicitlyUnwrappedOptional: JSONTransformable, DefaultInitable {
+extension ImplicitlyUnwrappedOptional: JSONCodable, DefaultInitable {
   
   public init?(_ json: JSON) {
-    guard let T = Wrapped.self as? JSONDeserializable.Type else { return nil }
+    guard let dic = (try? ImplicitlyUnwrappedOptional<Wrapped>(decode: json)) else { return nil }
+    self = dic
+  }
+  
+  public init(decode json: JSON) throws {
+    guard let T = Wrapped.self as? JSONDecodable.Type else {
+      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: Wrapped.self)
+    }
     self = T.init(json) as! Wrapped?
   }
   
   public var json: JSON {
-    guard Wrapped.self is JSONSerializable.Type else {
-      return .error(JSON.Error.unSupportType(type: Wrapped.self))
+    guard Wrapped.self is JSONEncodable.Type else {
+      return .error(JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: Wrapped.self))
     }
-    if case let .some(v as JSONSerializable) = self { return v.json }
+    if case let .some(v as JSONEncodable) = self { return v.json }
     return nil
   }
 }
 
-extension Set: JSONTransformable, DefaultInitable {
+extension Set: JSONCodable, DefaultInitable {
   
   public init?(_ json: JSON) {
+    guard let dic = (try? Set<Element>(decode: json)) else { return nil }
+    self = dic
+  }
+  
+  public init(decode json: JSON) throws {
     self.init()
-    guard let T = Element.self as? JSONDeserializable.Type else { return nil }
+    guard let T = Element.self as? JSONDecodable.Type else {
+      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: Element.self)
+    }
     for value in json.asArray {
       if let value = T.init(value) as! Element? {
         self.insert(value)
@@ -269,82 +315,95 @@ extension Set: JSONTransformable, DefaultInitable {
   
   public var json: JSON {
     return JSON(try JSON.array(self.map { element in
-      if let element = element as? JSONSerializable {
+      if let element = element as? JSONEncodable {
         let json = element.json
         if let error = json.error { throw error }
         return json.object
       }
-      throw JSON.Error.unSupportType(type: type(of: element))
+      throw JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: type(of: element))
     }))
   }
 }
 
-extension Array: JSONTransformable, DefaultInitable {
+extension Array: JSONCodable, DefaultInitable {
   
   public init?(_ json: JSON) {
-    guard let arr = json.array else { return nil }
+    guard let dic = (try? [Element](decode: json)) else { return nil }
+    self = dic
+  }
+  
+  public init(decode json: JSON) throws {
+    guard let arr = json.array else { throw [Any].mismatchError(json: json) }
     if let any = arr as? [Element] {
       self = any
-    } else if let T = Element.self as? JSONDeserializable.Type {
+    } else if let T = Element.self as? JSONDecodable.Type {
       self = arr.flatMap { T.init(JSON(any: $0)) as! Element? }
     } else {
-      return nil
+      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: Element.self)
     }
   }
   
   public var json: JSON {
     return JSON(try JSON.array(self.map { element in
-      if let element = element as? JSONSerializable {
+      if let element = element as? JSONEncodable {
         let json = element.json
         if let error = json.error { throw error }
         return json.object
       }
-      throw JSON.Error.unSupportType(type: type(of: element))
+      throw JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: type(of: element))
     }))
   }
 }
 
-extension Dictionary: JSONTransformable, DefaultInitable {
+extension Dictionary: JSONCodable, DefaultInitable {
   
   public init?(_ json: JSON) {
-    guard let dict = json.dict, Key.self is String.Type else { return nil }
+    guard let dic = (try? [Key: Value](decode: json)) else { return nil }
+    self = dic
+  }
+  
+  public init(decode json: JSON) throws {
+    guard let dict = json.dict else { throw [String: Any].mismatchError(json: json) }
+    guard Key.self is String.Type else {
+      throw JSON.Error.typeMismatch(expected: String.self, actual: Key.self)
+    }
     if let any = dict as Any as? [Key: Value] {
       self = any
-    } else if let T = Value.self as? JSONDeserializable.Type {
+    } else if let T = Value.self as? JSONDecodable.Type {
       self = dict.flatMap { ($0.0 as! Key, T.init(JSON(any: $0.1)) as! Value?) }
     } else {
-      return nil
+      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: Value.self)
     }
   }
   
   public var json: JSON {
     guard Key.self is String.Type else {
-      return .error(JSON.Error.unSupportType(type: Element.self))
+      return .error(JSON.Error.typeMismatch(expected: String.self, actual: Key.self))
     }
     return JSON(try JSON.object(self.map { (key, value) in
-      if let value = value as? JSONSerializable {
+      if let value = value as? JSONEncodable {
         let json = value.json
         if let error = json.error { throw error }
         return (key as! String, json.object)
       }
-      throw JSON.Error.unSupportType(type: type(of: value))
+      throw JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: type(of: value))
     }))
   }
 }
 
 //MARK: - Transform
 
-public enum CustomTransform<JSONObject: JSONTransformable, Object: JSONTransformable>: Transform {
+public enum CustomTransform<JSONObject: JSONCodable, Object: JSONCodable>: Transform {
   
   case fromJSON((JSONObject) throws -> Object)
   case toJSON((Object) throws -> JSONObject)
   case both(fromJSON: (JSONObject) throws -> Object, toJSON: (Object) throws -> JSONObject)
   
-  public var jsonObjectType: JSONTransformable.Type {
+  public var jsonObjectType: JSONCodable.Type {
     return JSONObject.self
   }
   
-  public var objectType: JSONTransformable.Type {
+  public var objectType: JSONCodable.Type {
     return Object.self
   }
   
@@ -389,19 +448,23 @@ public enum DateTransform: Transform {
   case formatter(DateFormatter)
   case timeIntervalSince(Since)
   
-  public static var `default`: DateTransform = {
+  public static var defaultDateFormatter: DateFormatter = {
     $0.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-    return .formatter($0)
+    return $0
   }(DateFormatter())
   
-  public var jsonObjectType: JSONTransformable.Type {
+  public static var defaultSince: Since = .year1970
+  
+  public static var `default`: DateTransform = .formatter(defaultDateFormatter)
+  
+  public var jsonObjectType: JSONCodable.Type {
     switch self {
     case .formatter: return String.self
     case .timeIntervalSince: return Double.self
     }
   }
   
-  public var objectType: JSONTransformable.Type {
+  public var objectType: JSONCodable.Type {
     switch DateTransform.default {
     case .formatter: return String.self
     case .timeIntervalSince: return Double.self
@@ -409,18 +472,18 @@ public enum DateTransform: Transform {
   }
   
   func setTransform(from: DateTransform, to: DateTransform) -> Transform.Func {
-    let deserialize = { (jsonTransformable: JSONTransformable) throws -> Date in
+    let deserialize = { (JSONCodable: JSONCodable) throws -> Date in
       switch from {
       case .formatter(let formatter):
-        let dateString = jsonTransformable as! String
+        let dateString = JSONCodable as! String
         if let date = formatter.date(from: dateString) { return date }
         throw JSON.Error.formatter(format: formatter.dateFormat, value: dateString)
       case .timeIntervalSince(let since):
-        let dateNum = jsonTransformable as! TimeInterval
+        let dateNum = JSONCodable as! TimeInterval
         return Date(timeIntervalSince1970: dateNum + since.timeInterval)
       }
     }
-    let serialize = { (date: Date) -> JSONTransformable in
+    let serialize = { (date: Date) -> JSONCodable in
       switch to {
       case .formatter(let formatter): return formatter.string(from: date)
       case .timeIntervalSince(let since): return date.timeIntervalSince1970 - since.timeInterval

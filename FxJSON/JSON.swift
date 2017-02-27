@@ -73,26 +73,27 @@ public extension JSON {
       } else {
         self = .number(num)
       }
+    case let err as Swift.Error:
+      self = .error(err)
     default:
       self = .null
     }
   }
   
-  var type: String {
+  var type: Any.Type {
     switch self {
-    case .object: return "Object"
-    case .array: return "Array"
-    case .string: return "String"
-    case .number: return "Number"
-    case .bool: return "Bool"
-    case .error: return "Error"
-    case .null: return "Null"
+    case .object: return [String: Any].self
+    case .array: return [Any].self
+    case .string: return String.self
+    case .number: return NSNumber.self
+    case .bool: return Bool.self
+    case .error: return Swift.Error.self
+    case .null: return NSNull.self
     }
   }
   
   var isNull: Bool {
-    if case .null = self { return true }
-    return false
+    return self == .null
   }
   
   var isError: Bool {
@@ -113,21 +114,21 @@ public extension JSON {
   enum Error: Swift.Error, CustomStringConvertible {
     
     case initalize(error: Swift.Error)
-    case unSupportType(type: Any.Type)
+    case typeMismatch(expected: Any.Type, actual: Any.Type)
     case encodeToJSON(wrongObject: Any)
     case notExist(dict: [String: Any], key: String)
     case wrongType(subscript: JSON, key: Index)
     case outOfBounds(arr: [Any], index: Int)
-    case deserilize(from: JSON, to: Any.Type)
     case formatter(format: String, value: String)
     case customTransfrom(source: Any)
+    case other(description: String)
     
     public var description: String {
       switch self {
       case .initalize(let error):
         return "Initalize error, \(error))"
-      case .unSupportType(type: let type):
-        return "Type: \(type) is unsupport"
+      case let .typeMismatch(expected, actual):
+        return "TypeMismatch, expected \(expected), got \(actual))"
       case .encodeToJSON(wrongObject: let any):
         return "Error when encoding to JSON: \(any)"
       case .notExist(dict: let dict, key: let key):
@@ -136,12 +137,12 @@ public extension JSON {
         return "Cannot subscrpit key: \(key) to \(json.debugDescription)"
       case .outOfBounds(arr: let arr, index: let index):
         return "Subscript \(index) to \(arr) is out of bounds"
-      case .deserilize(from: let json, to: let type):
-        return "Cannot deserilize to \(type), json is \(json.debugDescription)"
       case .formatter(format: let format, value: let value):
         return "Cannot phrase \(value) with \(format)"
       case .customTransfrom(source: let source):
         return "CustomTransfrom error, source: \(source)"
+      case .other(description: let description):
+        return description
       }
     }
   }
@@ -151,7 +152,7 @@ public extension JSON {
 
 extension JSON: ExpressibleByDictionaryLiteral {
   
-  public init(dictionaryLiteral elements: (String, JSONSerializable)...) {
+  public init(dictionaryLiteral elements: (String, JSONEncodable)...) {
     var dict = [String: Any](minimumCapacity: elements.count)
     for element in elements { dict[element.0] = element.1.json.object }
     self = .object(dict)
@@ -160,7 +161,7 @@ extension JSON: ExpressibleByDictionaryLiteral {
 
 extension JSON: ExpressibleByArrayLiteral {
   
-  public init(arrayLiteral elements: JSONSerializable...) {
+  public init(arrayLiteral elements: JSONEncodable...) {
     self = .array(elements.map { $0.json.object })
   }
 }
@@ -255,7 +256,7 @@ extension JSON: CustomStringConvertible, CustomDebugStringConvertible {
   }
   
   public var debugDescription: String {
-    return (try? type + ": " + jsonString()) ?? "\(object)"
+    return "\(type): " + ((try? jsonString()) ?? "\(object)")
   }
 }
 
@@ -321,7 +322,7 @@ extension Dictionary {
   func flatMap<T, U>(_ f: (Key, Value) -> (key: U, value: T?)) -> [U: T] {
     var dict = [U: T](minimumCapacity: self.count)
     for (key, value) in self {
-      if case let (key, .some(value)) = f(key, value) {
+      if case let (key, value?) = f(key, value) {
         dict[key] = value
       }
     }

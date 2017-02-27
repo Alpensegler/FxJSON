@@ -59,7 +59,7 @@ class ProtocolTests: XCTestCase {
     XCTAssertEqual(a.json, json)
     
     XCTAssertThrowsError(try A.init(decode: ["name": "", "age": "10"])) { (error) in
-      guard case JSON.Error.deserilize = error else { XCTFail(); return }
+      guard case JSON.Error.typeMismatch = error else { XCTFail(); return }
     }
   }
   

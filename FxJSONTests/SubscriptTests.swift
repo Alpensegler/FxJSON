@@ -100,7 +100,7 @@ class SubscriptTests: XCTestCase {
     
     XCTAssertEqual(json["dic", "str1"].object as? String, "Pratice more.")
     XCTAssertEqual(json["dic", "str2"], "还需要多做一点！😲")
-    XCTAssertEqual(json["dic", "str3"].description, "\"頑張って！😝\"")
+    XCTAssertEqual(json["dic", "str3"].description, "頑張って！😝")
     XCTAssertEqual(json["dic", "str4"], "其实都唔知做咩...")
   }
   

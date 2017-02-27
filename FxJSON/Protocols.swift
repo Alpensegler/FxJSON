@@ -28,195 +28,11 @@
 
 import Foundation
 
-//MARK: - JSONSerializable
-
-public protocol JSONSerializable {
-  
-  var json: JSON { get }
-}
-
-public extension JSONSerializable {
-  
-  func jsonData(withOptions opt: JSONSerialization.WritingOptions = []) throws -> Data {
-    return try json.jsonData(withOptions: opt)
-  }
-  
-  func jsonString(withOptions opt: JSONSerialization.WritingOptions = [],
-                  encoding ecd: String.Encoding = String.Encoding.utf8) throws -> String {
-    return try json.jsonString(withOptions: opt, encoding: ecd)
-  }
-}
-
-extension JSONSerializable {
-  
-  static func fetchValue(from pointer: UnsafeRawPointer) -> JSONSerializable {
-    return pointer.load(as: Self.self)
-  }
-}
-
-//MARK: - JSONDeserializable
-
-public protocol JSONDeserializable {
-  
-  init?(_ json: JSON)
-  
-  init(decode json: JSON) throws
-}
-
-public extension JSONDeserializable {
-  
-  init(jsonData: Data?, options: JSONSerialization.ReadingOptions = []) throws {
-    let json = JSON.init(jsonData: jsonData, options: options)
-    self = try Self.init(decode: json)
-  }
-    
-  init(jsonString: String?, options: JSONSerialization.ReadingOptions = []) throws {
-    let json = JSON.init(jsonString: jsonString, options: options)
-    self = try Self.init(decode: json)
-  }
-  
-  init(decode json: JSON) throws {
-    guard let value = Self.init(json) else {
-      throw json.error ?? JSON.Error.deserilize(from: json, to: Self.self)
-    }
-    self = value
-  }
-}
-
-extension JSONDeserializable {
-  
-  static func initialize(_ value: JSONDeserializable, into pointer: UnsafeMutableRawPointer) {
-    let bind = pointer.bindMemory(to: Self.self, capacity: 1)
-    bind.initialize(to: value as! Self)
-  }
-  
-  static func update(_ value: JSONDeserializable, into pointer: UnsafeMutableRawPointer) {
-    let bind = pointer.bindMemory(to: Self.self, capacity: 1)
-    bind.pointee = value as! Self
-  }
-}
-
-//MARK: - DefaultInitable
-
-public protocol DefaultInitable {
-  
-  init()
-}
-
-public extension JSONDeserializable where Self: DefaultInitable {
-  
-  init(nonNil json: JSON) {
-    self = Self.init(json) ?? Self.init()
-  }
-}
-
-//MARK: - JSONTransformable
-
-public typealias JSONTransformable = JSONDeserializable & JSONSerializable
-
-//MARK: - JSONConvertable
-
-public protocol JSONConvertable: JSONDeserializable {
-    
-  static func convert(from json: JSON) -> Self?
-}
-
-public extension JSONConvertable {
-  
-  init?(_ json: JSON) {
-    guard let v = Self.convert(from: json) else { return nil }
-    self = v
-  }
-}
-
-//MARK: - JSONDecodable
-
-public protocol JSONDecodable: JSONDeserializable {
-  
-  static func specificOptions() -> [String: SpecificOption]
-}
-
-public extension JSONDecodable {
-  
-  static func specificOptions() -> [String: SpecificOption] {
-    return [:]
-  }
-  
-  init(decode json: JSON) throws {
-    let object = UnsafeMutablePointer<Self>.allocate(capacity: 1)
-    defer { object.deallocate(capacity: 1) }
-    let rawObject = UnsafeMutableRawPointer(object)
-    let info = Metadata(type: Self.self)
-    let options = Self.specificOptions()
-    precondition(info.kind == .struct, "Only struct can implement JSONDecodable by default")
-    try info.properties.forEach {
-      let value = try Self.fetchValue(property: $0, json: json, from: options)
-      type(of: value).initialize(value, into: rawObject.advanced(by: $0.offset))
-    }
-    self = rawObject.load(fromByteOffset: 0, as: Self.self)
-  }
-  
-  init?(_ json: JSON) {
-    guard let value = try? Self.init(decode: json) else { return nil }
-    self = value
-  }
-}
-
-public extension JSONDecodable where Self: DefaultInitable {
-  
-  init(decode json: JSON) throws {
-    self.init()
-    let type = Mirror(reflecting: self).subjectType as! JSONDecodable.Type
-    let info = Metadata(type: type)
-    let options = type.specificOptions()
-    precondition(info.kind != .enum, "Enum can only adopt JSONDecodable to implement by default")
-    let selfPointer = info.getPointer(of: &self)
-    try info.properties.forEach {
-      let value = try Self.fetchValue(property: $0, json: json, from: options)
-      type(of: value).update(value, into: selfPointer.advanced(by: $0.offset))
-    }
-  }
-}
-
-public extension JSONDecodable
-where Self: RawRepresentable, Self.RawValue: JSONDeserializable {
-  
-  init(decode json: JSON) throws {
-    guard let value = RawValue(json).flatMap(Self.init) else {
-      throw JSON.Error.deserilize(from: json, to: Self.self)
-    }
-    self = value
-  }
-}
-
-extension JSONDecodable {
-  
-  static func fetchValue(property: Metadata.Property, json: JSON, from options: [String: SpecificOption]) throws -> JSONDeserializable {
-    var index = JSON.Index(stringLiteral: property.name)
-    var getJSON = { json[index] }
-    if let options = options[property.name] {
-      if let idx = options.index { index = idx }
-      if let transform = options.transform { getJSON = { json[index][transform] } }
-      if let value = options.defaultValue {
-        guard type(of: value) == property.type, let deserializable = property.type as? JSONDeserializable.Type else {
-          throw JSON.Error.unSupportType(type: type(of: value))
-        }
-        return deserializable.init(getJSON()) ?? (value as! JSONDeserializable)
-      }
-      if options.contains(.nonNil), let initable = property.type as? (JSONDeserializable & DefaultInitable).Type {
-        return initable.init(nonNil: getJSON())
-      }
-    }
-    guard let deserializable = property.type as? JSONDeserializable.Type else {
-      throw JSON.Error.unSupportType(type: property.type)
-    }
-    return try deserializable.init(decode: getJSON())
-  }
-}
-
 //MARK: - JSONEncodable
 
-public protocol JSONEncodable: JSONSerializable {
+public protocol JSONEncodable {
+  
+  var json: JSON { get }
   
   func encode(mapper: JSON.Mapper)
   
@@ -224,6 +40,10 @@ public protocol JSONEncodable: JSONSerializable {
 }
 
 public extension JSONEncodable {
+  
+  var json: JSON {
+    return JSON(operate: encode)
+  }
   
   func encode(mapper: JSON.Mapper) {
     let type = self is DefaultInitable ? Mirror(reflecting: self).subjectType : Self.self
@@ -246,8 +66,8 @@ public extension JSONEncodable {
           }
         }
       }
-      guard let serializable = type as? JSONSerializable.Type else {
-        mapper.json = .error(JSON.Error.unSupportType(type: type))
+      guard let serializable = type as? JSONEncodable.Type else {
+        mapper.json = .error(JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: type))
         return
       }
       let value = serializable.fetchValue(from: selfPointer.advanced(by: offset))
@@ -259,15 +79,173 @@ public extension JSONEncodable {
     return [:]
   }
   
-  var json: JSON {
-    return JSON.init(operate: encode)
+  func jsonData(withOptions opt: JSONSerialization.WritingOptions = []) throws -> Data {
+    return try json.jsonData(withOptions: opt)
+  }
+  
+  func jsonString(withOptions opt: JSONSerialization.WritingOptions = [],
+                  encoding ecd: String.Encoding = String.Encoding.utf8) throws -> String {
+    return try json.jsonString(withOptions: opt, encoding: ecd)
   }
 }
 
-public extension JSONEncodable where Self: RawRepresentable, Self.RawValue: JSONSerializable {
+public extension JSONEncodable where Self: RawRepresentable, Self.RawValue: JSONEncodable {
   
   func encode(mapper: JSON.Mapper) {
     mapper.json = self.rawValue.json
+  }
+}
+
+extension JSONEncodable {
+  
+  static func fetchValue(from pointer: UnsafeRawPointer) -> JSONEncodable {
+    return pointer.load(as: Self.self)
+  }
+  
+  static func mismatchError(json: JSON) -> Error {
+    return json.error ?? JSON.Error.typeMismatch(expected: Self.self, actual: json.type)
+  }
+}
+
+//MARK: - JSONDecodable
+
+public protocol JSONDecodable {
+  
+  init?(_ json: JSON)
+  
+  init(decode json: JSON) throws
+  
+  static func specificOptions() -> [String: SpecificOption]
+}
+
+public extension JSONDecodable {
+  
+  init?(_ json: JSON) {
+    guard let value = try? Self.init(decode: json) else { return nil }
+    self = value
+  }
+  
+  init(decode json: JSON) throws {
+    let object = UnsafeMutablePointer<Self>.allocate(capacity: 1)
+    defer { object.deallocate(capacity: 1) }
+    let rawObject = UnsafeMutableRawPointer(object)
+    let info = Metadata(type: Self.self)
+    let options = Self.specificOptions()
+    guard info.kind == .struct else {
+      throw JSON.Error.other(description: "Only struct can implement JSONDecodable by default")
+    }
+    try info.properties.forEach {
+      let value = try Self.fetchValue(property: $0, json: json, from: options)
+      type(of: value).initialize(value, into: rawObject.advanced(by: $0.offset))
+    }
+    self = rawObject.load(fromByteOffset: 0, as: Self.self)
+  }
+  
+  static func specificOptions() -> [String: SpecificOption] {
+    return [:]
+  }
+  
+  init(jsonData: Data?, options: JSONSerialization.ReadingOptions = []) throws {
+    let json = JSON.init(jsonData: jsonData, options: options)
+    self = try Self.init(decode: json)
+  }
+  
+  init(jsonString: String?, options: JSONSerialization.ReadingOptions = []) throws {
+    let json = JSON.init(jsonString: jsonString, options: options)
+    self = try Self.init(decode: json)
+  }
+}
+
+public extension JSONDecodable where Self: DefaultInitable {
+  
+  init(decode json: JSON) throws {
+    self.init()
+    let type = Mirror(reflecting: self).subjectType as! JSONDecodable.Type
+    let info = Metadata(type: type)
+    let options = type.specificOptions()
+    guard info.kind != .enum else {
+      throw JSON.Error.other(description: "enum can not implement JSONDecodable by default")
+    }
+    let selfPointer = info.getPointer(of: &self)
+    try info.properties.forEach {
+      let value = try Self.fetchValue(property: $0, json: json, from: options)
+      type(of: value).update(value, into: selfPointer.advanced(by: $0.offset))
+    }
+  }
+}
+
+public extension JSONDecodable
+where Self: RawRepresentable, Self.RawValue: JSONDecodable {
+  
+  init(decode json: JSON) throws {
+    guard let value = Self(rawValue: try RawValue(decode: json)) else {
+      throw JSON.Error.other(description: "RawValue init error, json is \(json)")
+    }
+    self = value
+  }
+}
+
+extension JSONDecodable {
+  
+  static func fetchValue(property: Metadata.Property, json: JSON, from options: [String: SpecificOption]) throws -> JSONDecodable {
+    var index = JSON.Index(stringLiteral: property.name)
+    var getJSON = { json[index] }
+    if let options = options[property.name] {
+      if let idx = options.index { index = idx }
+      if let transform = options.transform { getJSON = { json[index][transform] } }
+      if let value = options.defaultValue {
+        guard type(of: value) == property.type, let deserializable = property.type as? JSONDecodable.Type else {
+          throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: type(of: value))
+        }
+        return deserializable.init(getJSON()) ?? (value as! JSONDecodable)
+      }
+      if options.contains(.nonNil), let initable = property.type as? (JSONDecodable & DefaultInitable).Type {
+        return initable.init(nonNil: getJSON())
+      }
+    }
+    guard let deserializable = property.type as? JSONDecodable.Type else {
+      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: property.type)
+    }
+    return try deserializable.init(decode: getJSON())
+  }
+  
+  static func initialize(_ value: JSONDecodable, into pointer: UnsafeMutableRawPointer) {
+    let bind = pointer.bindMemory(to: Self.self, capacity: 1)
+    bind.initialize(to: value as! Self)
+  }
+  
+  static func update(_ value: JSONDecodable, into pointer: UnsafeMutableRawPointer) {
+    let bind = pointer.bindMemory(to: Self.self, capacity: 1)
+    bind.pointee = value as! Self
+  }
+}
+
+//MARK: - DefaultInitable
+
+public protocol DefaultInitable {
+  
+  init()
+}
+
+public extension JSONDecodable where Self: DefaultInitable {
+  
+  init(nonNil json: JSON) {
+    self = Self.init(json) ?? Self.init()
+  }
+}
+
+//MARK: - JSONConvertable
+
+public protocol JSONConvertable: JSONDecodable {
+    
+  static func convert(from json: JSON) -> Self?
+}
+
+public extension JSONConvertable {
+  
+  init?(_ json: JSON) {
+    guard let v = Self.convert(from: json) else { return nil }
+    self = v
   }
 }
 
@@ -286,10 +264,10 @@ public extension JSONDecodable where Self: JSONEncodable {
 
 public protocol Transform {
   
-  typealias Func = (JSONTransformable) throws -> JSONTransformable
+  typealias Func = (JSONCodable) throws -> JSONCodable
   
-  var jsonObjectType: JSONTransformable.Type { get }
-  var objectType: JSONTransformable.Type { get }
+  var jsonObjectType: JSONCodable.Type { get }
+  var objectType: JSONCodable.Type { get }
   
   var fromJSONFunc: Func? { get }
   var toJSONFunc: Func? { get }
@@ -420,15 +398,15 @@ public extension JSON.Mapper {
 
 postfix operator <
 
-public postfix func <<T: JSONDeserializable>(json: JSON) throws -> T {
+public postfix func <<T: JSONDecodable>(json: JSON) throws -> T {
   return try json.decode()
 }
 
-public func <<<T: JSONSerializable>(lhs: JSON.Mapper, rhs: T) {
+public func <<<T: JSONEncodable>(lhs: JSON.Mapper, rhs: T) {
   lhs.set(json: rhs.json)
 }
 
-public func <<<T: JSONDeserializable>(lhs: JSON, rhs: JSON.Index) -> T? {
+public func <<<T: JSONDecodable>(lhs: JSON, rhs: JSON.Index) -> T? {
   return try? lhs[rhs].decode()
 }
 

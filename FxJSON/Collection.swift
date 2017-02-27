@@ -115,19 +115,11 @@ public extension JSON {
   subscript(transform: Transform) -> JSON {
     get {
       guard !isError, let from = transform.fromJSONFunc else { return self }
-      guard let ojbect = transform.jsonObjectType.init(self) else {
-        return .error(Error.deserilize(from: self, to: transform.jsonObjectType))
-      }
-      return JSON.init(try from(ojbect))
+      return JSON.init(try from(transform.jsonObjectType.init(decode: self)))
     }
     set {
-      if !newValue.isError, let to = transform.toJSONFunc {
-        if let jsonObject = transform.objectType.init(newValue) {
-          self = JSON.init(try to(jsonObject)); return
-        }
-        self = .error(Error.deserilize(from: newValue, to: transform.objectType)); return
-      }
-      self = newValue
+      guard !newValue.isError, let to = transform.toJSONFunc else { self = newValue; return }
+      self = JSON.init(try to(transform.objectType.init(decode: newValue)))
     }
   }
 }
