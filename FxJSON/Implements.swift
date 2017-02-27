@@ -185,31 +185,32 @@ extension Date: JSONCodable {
   }
   
   public init(decode json: JSON) throws {
-    switch (json, DateTransform.default) {
-    case (.string(let v), .formatter(let formatter)):
+    switch json {
+    case .string(let dateString):
       self.init()
-      guard let date = formatter.date(from: v) else {
-        throw JSON.Error.formatter(format: formatter.dateFormat, value: v)
+      let formatter: DateFormatter = {
+        if case .formatter(let formatter) = DateTransform.default {
+          return formatter
+        }
+        return .default
+      }()
+      guard let date = formatter.date(from: dateString) else {
+        throw JSON.Error.formatter(format: formatter.dateFormat, value: dateString)
       }
       self = date
-    case (.string(let v), _):
-      self.init()
-      let formatter = DateTransform.defaultDateFormatter
-      guard let date = formatter.date(from: v) else {
-        throw JSON.Error.formatter(format: formatter.dateFormat, value: v)
-      }
-      self = date
-    case (.number(let v), .timeIntervalSince(let since)):
+    case .number(let v):
+      let since: DateTransform.Since = {
+        if case .timeIntervalSince(let since) = DateTransform.default {
+          return since
+        }
+        return .default
+      }()
       self.init(timeIntervalSince1970: v.doubleValue + since.timeInterval)
-    case (.number(let v), _):
-      self.init(timeIntervalSince1970: v.doubleValue + DateTransform.defaultSince.timeInterval)
-    case (_, .formatter):
-      throw String.mismatchError(json: json)
-    case (_, .timeIntervalSince):
-      throw Double.mismatchError(json: json)
+    default:
+      throw DateTransform.default.objectType.mismatchError(json: json)
     }
   }
-  
+
   public var json: JSON {
     switch DateTransform.default {
     case .formatter(let formatetr):
@@ -226,10 +227,7 @@ extension URL: JSONCodable {
     guard let urlString = String(json)?
       .addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
       else { throw String.mismatchError(json: json) }
-    if urlString.characters.isEmpty, let url = URL(string: "about://") {
-      self = url
-      return
-    }
+    if urlString.characters.isEmpty, let url = URL(string: "about://") { self = url; return }
     guard let url = URL(string: urlString) else {
       throw JSON.Error.other(description: "URL init error, urlString is \(urlString)")
     }
@@ -426,6 +424,14 @@ public enum CustomTransform<JSONObject: JSONCodable, Object: JSONCodable>: Trans
   }
 }
 
+public extension DateFormatter {
+  
+  @nonobjc static var `default`: DateFormatter = {
+    $0.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+    return $0
+  }(DateFormatter())
+}
+
 public enum DateTransform: Transform {
   
   public enum Since {
@@ -443,31 +449,26 @@ public enum DateTransform: Transform {
       case .date(let date): return date.timeIntervalSince1970
       }
     }
+    
+    static var `default`: Since = .year1970
   }
   
   case formatter(DateFormatter)
   case timeIntervalSince(Since)
   
-  public static var defaultDateFormatter: DateFormatter = {
-    $0.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-    return $0
-  }(DateFormatter())
-  
-  public static var defaultSince: Since = .year1970
-  
-  public static var `default`: DateTransform = .formatter(defaultDateFormatter)
+  public static var `default`: DateTransform = .formatter(.default)
   
   public var jsonObjectType: JSONCodable.Type {
     switch self {
     case .formatter: return String.self
-    case .timeIntervalSince: return Double.self
+    case .timeIntervalSince: return TimeInterval.self
     }
   }
   
   public var objectType: JSONCodable.Type {
     switch DateTransform.default {
     case .formatter: return String.self
-    case .timeIntervalSince: return Double.self
+    case .timeIntervalSince: return TimeInterval.self
     }
   }
   
