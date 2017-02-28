@@ -145,6 +145,10 @@ public extension JSONDecodable {
     return [:]
   }
   
+  init?(any: Any) {
+    self.init(JSON(any: any))
+  }
+  
   init(jsonData: Data?, options: JSONSerialization.ReadingOptions = []) throws {
     let json = JSON.init(jsonData: jsonData, options: options)
     self = try Self.init(decode: json)
@@ -192,6 +196,7 @@ extension JSONDecodable {
     var getJSON = { json[index] }
     if let options = options[property.name] {
       if let idx = options.index { index = idx }
+      if let idx = options.alertIndex, json[index].isError { index = idx }
       if let transform = options.transform { getJSON = { json[index][transform] } }
       if let value = options.defaultValue {
         guard type(of: value) == property.type, let deserializable = property.type as? JSONDecodable.Type else {
@@ -280,34 +285,48 @@ public struct SpecificOption: OptionSet {
   public let rawValue: Int
   
   let index: JSON.Index?
+  let alertIndex: JSON.Index?
   let transform: Transform?
   let defaultValue: Any?
   
-  init(rawValue: Int, index: JSON.Index? = nil, transform: Transform? = nil, defaultValue: Any? = nil) {
+  init(rawValue: Int, index: JSON.Index? = nil, alertIndex: JSON.Index? = nil,
+       transform: Transform? = nil, defaultValue: Any? = nil) {
     self.rawValue = rawValue
     self.index = index
+    self.alertIndex = alertIndex
     self.transform = transform
     self.defaultValue = defaultValue
   }
   
   public static let index = { SpecificOption(rawValue: 1 << 0, index: $0) }
-  public static let transform = { SpecificOption(rawValue: 1 << 1, transform: $0) }
-  public static let defaultValue = { SpecificOption(rawValue: 1 << 2, defaultValue: $0) }
-  public static let nonNil = SpecificOption(rawValue: 1 << 3)
-  public static let ignore = SpecificOption(rawValue: 1 << 4)
-  public static let ignoreIfNull = SpecificOption(rawValue: 1 << 5)
+  public static let alertIndex = { SpecificOption(rawValue: 1 << 1, alertIndex: $0) }
+  public static let transform = { SpecificOption(rawValue: 1 << 2, transform: $0) }
+  public static let defaultValue = { SpecificOption(rawValue: 1 << 3, defaultValue: $0) }
+  public static let nonNil = SpecificOption(rawValue: 1 << 4)
+  public static let ignore = SpecificOption(rawValue: 1 << 5)
+  public static let ignoreIfNull = SpecificOption(rawValue: 1 << 6)
   
   public init(rawValue: Int) {
-    self.init(rawValue: rawValue, index: nil, transform: nil, defaultValue: nil)
+    self.init(rawValue: rawValue, index: nil, alertIndex: nil, transform: nil, defaultValue: nil)
   }
   
   public mutating func formUnion(_ other: SpecificOption) {
+    let combinedIdx = index.flatMap { idx in other.index.map { JSON.Index.path([idx, $0]) } }
+    let combinedAidx = alertIndex.flatMap { idx in other.alertIndex.map { JSON.Index.path([idx, $0]) } }
     self = SpecificOption(
       rawValue: rawValue | other.rawValue,
-      index: index ?? other.index,
+      index: combinedIdx ?? index ?? other.index,
+      alertIndex: combinedAidx ?? alertIndex ?? other.alertIndex,
       transform: transform ?? other.transform,
       defaultValue: defaultValue ?? other.defaultValue
     )
+  }
+  
+  @discardableResult
+  public mutating func insert(_ newMember: SpecificOption)
+    -> (inserted: Bool, memberAfterInsert: SpecificOption) {
+    formUnion(newMember)
+    return (true, self)
   }
 }
 

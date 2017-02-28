@@ -291,15 +291,15 @@ extension JSON.Index: ExpressibleByArrayLiteral {
 extension JSON.Index: ExpressibleByStringLiteral {
   
   public init(stringLiteral value: String) {
-    self = .key(.key(value))
+    self = value.isEmpty ? .path([]) : .key(.key(value))
   }
   
   public init(unicodeScalarLiteral value: String) {
-    self = .key(.key(value))
+    self = value.isEmpty ? .path([]) : .key(.key(value))
   }
   
   public init(extendedGraphemeClusterLiteral value: String) {
-    self = .key(.key(value))
+    self = value.isEmpty ? .path([]) : .key(.key(value))
   }
 }
 

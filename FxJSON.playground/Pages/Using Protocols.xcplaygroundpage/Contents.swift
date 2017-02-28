@@ -87,7 +87,7 @@ class UserClass: BasicClass {
   
   override func encode(mapper: JSON.Mapper) {
     mapper[ignoreIfNull: "website"]  << website
-    mapper["friends"]           << friends
+    mapper["friends"]                << friends
     super.encode(mapper: mapper)
   }
 }
