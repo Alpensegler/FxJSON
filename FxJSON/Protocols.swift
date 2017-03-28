@@ -192,9 +192,9 @@ where Self: RawRepresentable, Self.RawValue: JSONDecodable {
 extension JSONDecodable {
   
   static func fetchValue(property: Metadata.Property, json: JSON, from options: [String: SpecificOption]) throws -> JSONDecodable {
-    var index = JSON.Index(stringLiteral: property.name)
+    var index = JSON.Index(stringLiteral: property.key)
     var getJSON = { json[index] }
-    if let options = options[property.name] {
+    if let options = options[property.key] {
       if let idx = options.index { index = idx }
       if let idx = options.alertIndex, json[index].isError { index = idx }
       if let transform = options.transform { getJSON = { json[index][transform] } }
@@ -431,77 +431,90 @@ public func <<<T: JSONDecodable>(lhs: JSON, rhs: JSON.Index) -> T? {
 
 //MARK: - Metadata
 
-public struct Metadata {
+protocol NominalType {
   
-  typealias Structure = (kind: Int, offset: Int)
+  init(pointer: UnsafePointer<Int>)
+  var pointer: UnsafePointer<Int> { get set }
+  var nominalTypeDescriptorOffsetLocation: Int { get }
+  var properties: [Metadata.Property] { get }
+}
+
+fileprivate extension UnsafePointer {
+  init<T>(_ pointer: UnsafePointer<T>, offset: Int? = nil) {
+    var rawPointer = UnsafeRawPointer(pointer)
+    if let offset = offset { rawPointer = rawPointer.advanced(by: offset) }
+    self = rawPointer.assumingMemoryBound(to: Pointee.self)
+  }
+}
+
+struct Metadata {
   
-  typealias Property = (name: String, type: Any.Type, offset: Int)
+  typealias Property = (key: String, type: Any.Type, offset: Int)
   
-  struct NominalTypeDescriptor {
-    var name: Int32
-    var numberOfFields: Int32
-    var FieldOffsetVectorOffset: Int32
-    var fieldNames: Int32
-    var getFieldTypes: Int32
+  struct Class: NominalType {
+    
+    typealias Meta = (kind: Int, superClass: Any.Type?)
+    
+    var pointer: UnsafePointer<Int>
+    var nominalTypeDescriptorOffsetLocation: Int {
+      return MemoryLayout<Int>.size == MemoryLayout<Int64>.size ? 8 : 11
+    }
+    
+    var properties: [Property] {
+      let metaClassPointer = pointer.withMemoryRebound(to: Meta.self, capacity: 1) { $0 }
+//      let metaClassPointer = unsafeBitCast(pointer, to: UnsafePointer<Meta>.self)
+      guard let superClass = metaClassPointer.pointee.superClass else { return [] }
+      let superClassMetaData = Metadata(type: superClass)
+      return superClassMetaData.properties + NominalTypeDescriptor(nominalType: self).properties()
+    }
   }
   
-  struct Class {
-    var isa: UnsafePointer<Class>
-    var superIsa: UnsafePointer<Class>
-    var data: (Int, Int, Int, Int32, Int32, Int32, Int16, Int16, Int32, Int32)
-    var description: Int
+  struct Struct: NominalType {
+    var pointer: UnsafePointer<Int>
+    var nominalTypeDescriptorOffsetLocation: Int {
+      return 1
+    }
+    
+    var properties: [Property] {
+      return NominalTypeDescriptor(nominalType: self).properties()
+    }
   }
   
-  enum Kind {
-    case `struct`
+  enum Kind: Int {
     case `class`
+    case `struct`
     case `enum`
-    case objCClassWrapper
+    case objCClassWrapper = 14
+    
+    init(_ kind: Int) {
+      self = Kind(rawValue: kind) ?? .class
+    }
+    
+    var nominalType: NominalType.Type? {
+      switch self {
+      case .class: return Class.self
+      case .struct: return Struct.self
+      default: return nil
+      }
+    }
   }
   
-  static var table: [UnsafePointer<Structure>: Metadata] = [:]
+  static var propertyCache: [UnsafePointer<Int>: [Property]] = [:]
   
   let kind: Kind
   let properties: [Property]
   
-  init(kind: Kind, properties: [Property] = []) {
-    self.kind = kind
-    self.properties = properties
-  }
-  
   init(type: Any.Type) {
-    let typePointer = unsafeBitCast(type, to: UnsafePointer<Structure>.self)
-    if let value = Metadata.table[typePointer] {
-      self.init(kind: value.kind, properties: value.properties)
-      return
+    let typePointer = unsafeBitCast(type, to: UnsafePointer<Int>.self)
+    kind = Kind(typePointer.pointee)
+    if let properties = Metadata.propertyCache[typePointer] {
+      self.properties = properties
+    } else if let properties = kind.nominalType?.init(pointer: typePointer).properties {
+      Metadata.propertyCache[typePointer] = properties
+      self.properties = properties
+    } else {
+      self.properties = []
     }
-    switch typePointer.pointee.kind {
-    case 1:
-      self.init(structTypePointer: typePointer)
-    case 2:
-      self.init(kind: .enum)
-    case 14:
-      self.init(kind: .objCClassWrapper)
-    default:
-      self.init(classTypePointer: typePointer)
-    }
-    Metadata.table[typePointer] = self
-  }
-  
-  init(structTypePointer: UnsafePointer<Structure>) {
-    let intPointer = unsafeBitCast(structTypePointer, to: UnsafePointer<Int>.self)
-    let nominalTypeBase = intPointer.advanced(by: 1)
-    let int8Type = unsafeBitCast(nominalTypeBase, to: UnsafePointer<Int8>.self)
-    let nominalTypePointer = int8Type.advanced(by: structTypePointer.pointee.offset)
-    let nominalType = unsafeBitCast(nominalTypePointer, to: UnsafePointer<NominalTypeDescriptor>.self)
-    kind = .struct
-    properties = Metadata.getProperties(intPointer: intPointer, nominalType: nominalType, isClass: false)
-  }
-  
-  init(classTypePointer: UnsafePointer<Structure>) {
-    let classTypePointer = unsafeBitCast(classTypePointer, to: UnsafePointer<Class>.self)
-    kind = .class
-    properties = Metadata.getProperties(classTypePointer: classTypePointer)
   }
   
   func getPointer<T>(of any: inout T) -> UnsafeMutableRawPointer {
@@ -513,44 +526,49 @@ public struct Metadata {
     }
   }
   
-  static func getProperties(classTypePointer: UnsafePointer<Class>) -> [Property] {
-    let intPointer = unsafeBitCast(classTypePointer, to: UnsafePointer<Int>.self)
-    let typePointee = classTypePointer.pointee
-    let superPointee = typePointee.superIsa
-    if unsafeBitCast(typePointee.isa, to: Int.self) == 14 || unsafeBitCast(superPointee, to: Int.self) == 0 {
-      return []
+  struct NominalTypeDescriptor {
+    
+    struct Meta {
+      let mangledName: Int32
+      let numberOfFields: Int32
+      let fieldOffsetVector: Int32
+      let fieldNames: Int32
+      let fieldTypesAccessor: Int32
     }
-    let properties = getProperties(classTypePointer: superPointee)
-    let offset = (MemoryLayout<Int>.size == MemoryLayout<Int64>.size) ? 8 : 11
-    let nominalTypeInt = intPointer.advanced(by: offset)
-    let nominalTypeint8 = unsafeBitCast(nominalTypeInt, to: UnsafePointer<Int8>.self)
-    let des = nominalTypeint8.advanced(by: typePointee.description)
-    let nominalType = unsafeBitCast(des, to: UnsafePointer<NominalTypeDescriptor>.self)
-    return properties + getProperties(intPointer: intPointer, nominalType: nominalType, isClass: true)
-  }
-  
-  static func getProperties(intPointer: UnsafePointer<Int>, nominalType: UnsafePointer<NominalTypeDescriptor>, isClass: Bool) -> [Property] {
-    let numberOfField = Int(nominalType.pointee.numberOfFields)
-    let int32NominalType = unsafeBitCast(nominalType, to: UnsafePointer<Int32>.self)
-    let fieldBase = int32NominalType.advanced(by: isClass ? 3 : Int(nominalType.pointee.FieldOffsetVectorOffset))
-    let int8FieldBasePointer = unsafeBitCast(fieldBase, to: UnsafePointer<Int8>.self)
-    var fieldNamePointer = int8FieldBasePointer.advanced(by: Int(nominalType.pointee.fieldNames))
-    let int32NominalFunc = unsafeBitCast(nominalType, to: UnsafePointer<Int32>.self).advanced(by: 4)
-    let nominalFunc = unsafeBitCast(int32NominalFunc, to: UnsafePointer<Int8>.self).advanced(by: Int(nominalType.pointee.getFieldTypes))
-    let offsetPointer = intPointer.advanced(by: Int(nominalType.pointee.FieldOffsetVectorOffset))
+    
     typealias FieldsTypeAccessor = @convention(c) (UnsafePointer<Int>) -> UnsafePointer<UnsafePointer<Int>>
-    let funcPointer = unsafeBitCast(nominalFunc, to: FieldsTypeAccessor.self)
-    let funcBase = funcPointer(unsafeBitCast(nominalFunc, to: UnsafePointer<Int>.self))
-    return (0..<numberOfField).flatMap { i in
-      guard let name = String(validatingUTF8: fieldNamePointer) else { return nil }
-      while fieldNamePointer.pointee != 0 {
+    
+    let typePointer: UnsafePointer<Int>
+    let numberOfFields: Int
+    let fieldOffsetVector: Int
+    let fieldTypesAccessor: FieldsTypeAccessor
+    let fieldNamePointer: UnsafePointer<CChar>
+    
+    init(nominalType: NominalType) {
+      let base = nominalType.pointer.advanced(by: nominalType.nominalTypeDescriptorOffsetLocation)
+      typePointer = nominalType.pointer
+      let pointer = UnsafePointer<NominalTypeDescriptor.Meta>(base, offset: base.pointee)
+      numberOfFields = Int(pointer.pointee.numberOfFields)
+      fieldOffsetVector = Int(pointer.pointee.fieldOffsetVector)
+      let offset = Int(pointer.pointee.fieldTypesAccessor)
+      let int32Pointer = UnsafePointer<Int32>(pointer)
+      let offsetPointer = UnsafePointer<Int>(int32Pointer.advanced(by: 4), offset: Int(offset))
+      fieldTypesAccessor = unsafeBitCast(offsetPointer, to: FieldsTypeAccessor.self)
+      fieldNamePointer = UnsafePointer<CChar>(int32Pointer.advanced(by: 3), offset: Int(pointer.pointee.fieldNames))
+    }
+    
+    func properties() -> [Property] {
+      var fieldNamePointer = self.fieldNamePointer
+      return (0..<numberOfFields).flatMap { i in
+        guard let key = String(validatingUTF8: fieldNamePointer) else { return nil }
+        while fieldNamePointer.pointee != 0 {
+          fieldNamePointer = fieldNamePointer.advanced(by: 1)
+        }
         fieldNamePointer = fieldNamePointer.advanced(by: 1)
+        let type = unsafeBitCast(fieldTypesAccessor(typePointer).advanced(by: i).pointee, to: Any.Type.self)
+        let offset = UnsafePointer<Int>(typePointer)[fieldOffsetVector + i]
+        return (key: key, type: type, offset: offset)
       }
-      fieldNamePointer = fieldNamePointer.advanced(by: 1)
-      let offset = offsetPointer.advanced(by: i)
-      let typeFetcher = funcBase.advanced(by: i).pointee
-      let type = unsafeBitCast(typeFetcher, to: Any.Type.self)
-      return (name: name, type: type, offset: offset.pointee)
     }
   }
 }

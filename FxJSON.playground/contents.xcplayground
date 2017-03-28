@@ -6,5 +6,6 @@
         <page name='Using Protocols'/>
         <page name='Serialize'/>
         <page name='NewFeature'/>
+        <page name='test'/>
     </pages>
 </playground>

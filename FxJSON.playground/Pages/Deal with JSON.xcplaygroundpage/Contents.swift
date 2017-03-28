@@ -63,7 +63,7 @@ json.isEmpty
 json.first
 
 for subJSON in json {
-	// do some thing
+	print(subJSON)
 }
 
 //: Using `.asArray`, `.asDict` will be more efficient
@@ -108,6 +108,7 @@ let userJSON: JSON = [
 	"name": name,
 	"admin": admin
 ]
+
 
 //: Using operator <<
 let to = CustomTransform<String, String>.toJSON {

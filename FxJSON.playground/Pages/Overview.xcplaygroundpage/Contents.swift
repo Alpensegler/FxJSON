@@ -17,7 +17,7 @@ import FxJSON
 let jsonData = try Data(contentsOf: #fileLiteral(resourceName: "JSON.json"))
 let jsonString = String(data: jsonData, encoding: .utf8)
 
-//: You only need to adopt `JSONMappable` and implement init()
+//: You only need to adopt `JSONCodable`
 struct User: JSONCodable {
   let id: Int64
   let name: String

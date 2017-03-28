@@ -519,43 +519,42 @@ let color = UIColor(0xFF00FF as JSON)	//purpel color
 
 #### 2. Protocols
 
-| Protocol           | 需要实现的方法                                  | 继承的 Protocol       | 说明                                       |
-| ------------------ | ---------------------------------------- | ------------------ | ---------------------------------------- |
-| JSONSerializable   | var json: JSON { get }                   | 无                  | 该协议让类型支持转换成 JSON                         |
-| JSONDeserializable | init?(_ json: JSON)                      | 无                  | 该协议让类型支持从 JSON 转换                        |
-| JSONTransformable  | var json: JSON { get }; init?(_ json: JSON) | 无                  | JSONDeserializable & JSONSerializable    |
-| DefaultInitable    | init()                                   | 无                  | 支持该协议并支持 JSONDeserializable 则可以使用 init(noneNull json: JSON) 方法 |
-| JSONConvertable    | static func convert(from json: JSON) -> Self? | JSONDeserializable | 该协议让引用类型支持从 JSON 转换                      |
-| JSONDecodable      | init(decode json: JSON) throws // 可选     | JSONDeserializable | 该协议让类型支持从 JSON 转换，当类型为 RawRepresentable 且 RawValue 为支持的类型时默认支持 |
-| JSONEncodable      | func encode(mapper: JSON.Mapper) // 可选   | JSONSerializable   | 该协议让类型支持从 JSON 转换，当类型为 RawRepresentable 且 RawValue 为支持的类型时时默认支持 |
-| JSONCOdable        | init(decode json: JSON) throws; func encode(mapper: JSON.Mapper) // 可选 | 无                  | JSONDecodable & JSONEncodable            |
+| Protocol          | 需要实现的方法                                  | 说明                                       |
+| ----------------- | ---------------------------------------- | ---------------------------------------- |
+| JSONTransformable | var json: JSON { get }; init?(_ json: JSON) | JSONDeserializable & JSONSerializable    |
+| DefaultInitable   | init()                                   | 支持该协议并支持 JSONDeserializable 则可以使用 init(noneNull json: JSON) 方法 |
+| JSONConvertable   | static func convert(from json: JSON) -> Self? | 该协议让引用类型支持从 JSON 转换                      |
+| JSONDecodable     | init(decode json: JSON) throws // 可选     | 该协议让类型支持从 JSON 转换，当类型为 RawRepresentable 且 RawValue 为支持的类型时默认支持 |
+| JSONEncodable     | func encode(mapper: JSON.Mapper) // 可选   | 该协议让类型支持从 JSON 转换，当类型为 RawRepresentable 且 RawValue 为支持的类型时时默认支持 |
+| JSONCOdable       | init(decode json: JSON) throws; func encode(mapper: JSON.Mapper) // 可选 | JSONDecodable & JSONEncodable            |
 
 #### 3. Options
 
-| option        | 参数         | 生效     | 说明                                       |
-| ------------- | ---------- | ------ | ---------------------------------------- |
-| .index        | JSON.Index | both   | 替代属性名来获取 JSON 数据和生成 JSON 数据              |
-| .transform    | Transform  | both   | 自定义转换方式                                  |
-| .defaultValue | Any        | decode | 当 JSON 中获取数据失败，不 throw 并使用该数据作为值         |
-| .nonNil       | ×          | decode | 效果同 init(nonNil: json)，需要是 `DefaultInitable` 参数 |
-| .ignore       | ×          | encode | 转换为 JSON 时忽略这个属性                         |
-| .ignoreIfNull | ×          | encode | 转换为 JSON 为 null 时忽略这个属性                  |
+| option            | 参数         | 生效     | 说明                                       |
+| ----------------- | ---------- | ------ | ---------------------------------------- |
+| .index            | JSON.Index | both   | 替代属性名来获取 JSON 数据和生成 JSON 数据              |
+| .alternativeIndex | JSON.Index | decode | 当 JSON 中获取数据失败，使用这个 index                |
+| .transform        | Transform  | both   | 自定义转换方式                                  |
+| .defaultValue     | Any        | decode | 当 JSON 中获取数据失败，使用该数据作为值                  |
+| .nonNil           | ×          | decode | 效果同 init(nonNil: json)，需要是 `DefaultInitable` |
+| .ignore           | ×          | encode | 转换为 JSON 时忽略这个属性                         |
+| .ignoreIfNull     | ×          | encode | 转换为 JSON 为 null 时忽略这个属性                  |
 
 **note:**  × 表示无参数
 
 #### 4. Errors
 
-| JSON.Error       | Associated Values                  |
-| ---------------- | ---------------------------------- |
-| .initalize       | (error: Swift.Error)               |
-| .unSupportType   | (type: Any.Type)                   |
-| .encodeToData    | (wrongObject: Any)                 |
-| .notExist        | (dict: [String: Any], key: String) |
-| .wrongType       | (subscript: JSON, key: Index)      |
-| .outOfBounds     | (arr: [Any], index: Int)           |
-| .deserilize      | (from: JSON, to: Any.Type)         |
-| .formatter       | (format: String, value: String)    |
-| .customTransfrom | (source: Any)                      |
+| JSON.Error       | Associated Values                      |
+| ---------------- | -------------------------------------- |
+| .initalize       | (error: Swift.Error)                   |
+| .typeMismatch    | (expected: Any.Type, actual: Any.Type) |
+| .encodeToData    | (wrongObject: Any)                     |
+| .notExist        | (dict: [String: Any], key: String)     |
+| .wrongType       | (subscript: JSON, key: Index)          |
+| .outOfBounds     | (arr: [Any], index: Int)               |
+| .deserilize      | (from: JSON, to: Any.Type)             |
+| .formatter       | (format: String, value: String)        |
+| .customTransfrom | (source: Any)                          |
 
 ## Extend
 
