@@ -57,13 +57,13 @@ let friends = [[String: Any]](nonNil: json[path, "friends"])
 
 let object = try [String: Any](jsonData: jsonData)
 //: ## 3. JSON as MutableCollection
-//: `JSON` is a MutableCollection, so you may use:
+//: `JSON` is a Collection, so you cas use:
 json.count
 json.isEmpty
 json.first
 
 for subJSON in json {
-	print(subJSON)
+	// do some thing
 }
 
 //: Using `.asArray`, `.asDict` will be more efficient

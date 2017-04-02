@@ -17,7 +17,7 @@ import FxJSON
 let jsonData = try Data(contentsOf: #fileLiteral(resourceName: "JSON.json"))
 let jsonString = String(data: jsonData, encoding: .utf8)
 
-//: You only need to adopt `JSONCodable`
+//: Adopting `JSONCodable`, and that is all you need to make transforming between JSON model and Swift model
 struct User: JSONCodable {
   let id: Int64
   let name: String
@@ -26,7 +26,7 @@ struct User: JSONCodable {
   let lastLogin: Date     //Date is supported through DateTransform.default
   let friends: [User]     //Also your own type
 }
-//: Or specify the way transforming (optional)
+//: Or you can specify the way transforming (optional)
 let webTransform = CustomTransform<String, String>.fromJSON { "https://\($0)" }
 let dateTransform = DateTransform.timeIntervalSince(.year1970) //or you can set DateTransform.default
 
@@ -40,7 +40,7 @@ extension User {
     ]
   }
 }
-//: You can now use the way below to Desrialize to Object
+//: You can now use the way below to Desrialize the JSON data to swift Model
 let json = JSON(jsonData: jsonData)
 //let json = JSON(jsonString: jsonString)
 do {
@@ -51,7 +51,7 @@ do {
 
 let users = [User](nonNil: json["data", "users"])
 
-//: > nonNil param let you get Non-nil value
+//: > `nonNil` param let you get Non-nil value
 
 if let dict = try? [String: Any](jsonData: jsonData) {
   dict
@@ -63,7 +63,7 @@ do {
   (index, arr)
 }
 
-//: Transforming to json could be done automaticly
+//: And also, srialize the swift Model to JSON data
 users.json
 try users.jsonData()
 try users.jsonString()

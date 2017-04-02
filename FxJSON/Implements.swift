@@ -1,12 +1,12 @@
 //
-//  Transform.swift
+//  Implements.swift
 //  FxJSON
 //
 //  Created by Frain on 7/5/16.
 //
 //  The MIT License (MIT)
 //
-//  Copyright (c) 2016 Frain
+//  Copyright (c) 2016~2017 Frain
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to
@@ -255,42 +255,42 @@ extension Optional: JSONCodable {
   
   public init(decode json: JSON) throws {
     guard let T = Wrapped.self as? JSONDecodable.Type else {
-      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: Wrapped.self)
+      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Wrapped.self)
     }
     self = T.init(json) as! Wrapped?
   }
   
   public var json: JSON {
     guard Wrapped.self is JSONEncodable.Type else {
-      return .error(JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: Wrapped.self))
+      return .error(JSON.Error.notConfirmTo(protocol: JSONEncodable.self, actual: Wrapped.self))
     }
     if case let .some(v as JSONEncodable) = self { return v.json }
     return nil
   }
 }
 
-extension ImplicitlyUnwrappedOptional: JSONCodable, DefaultInitable {
-  
-  public init?(_ json: JSON) {
-    guard let dic = (try? ImplicitlyUnwrappedOptional<Wrapped>(decode: json)) else { return nil }
-    self = dic
-  }
-  
-  public init(decode json: JSON) throws {
-    guard let T = Wrapped.self as? JSONDecodable.Type else {
-      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: Wrapped.self)
-    }
-    self = T.init(json) as! Wrapped?
-  }
-  
-  public var json: JSON {
-    guard Wrapped.self is JSONEncodable.Type else {
-      return .error(JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: Wrapped.self))
-    }
-    if case let .some(v as JSONEncodable) = self { return v.json }
-    return nil
-  }
-}
+//extension ImplicitlyUnwrappedOptional: JSONCodable, DefaultInitable {
+//  
+//  public init?(_ json: JSON) {
+//    guard let dic = (try? ImplicitlyUnwrappedOptional<Wrapped>(decode: json)) else { return nil }
+//    self = dic
+//  }
+//  
+//  public init(decode json: JSON) throws {
+//    guard let T = Wrapped.self as? JSONDecodable.Type else {
+//      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Wrapped.self)
+//    }
+//    self = T.init(json) as! Wrapped?
+//  }
+//  
+//  public var json: JSON {
+//    guard Wrapped.self is JSONEncodable.Type else {
+//      return .error(JSON.Error.notConfirmTo(protocol: JSONEncodable.self, actual: Wrapped.self))
+//    }
+//    if case let .some(v as JSONEncodable) = self { return v.json }
+//    return nil
+//  }
+//}
 
 extension Set: JSONCodable, DefaultInitable {
   
@@ -302,7 +302,7 @@ extension Set: JSONCodable, DefaultInitable {
   public init(decode json: JSON) throws {
     self.init()
     guard let T = Element.self as? JSONDecodable.Type else {
-      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: Element.self)
+      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Element.self)
     }
     for value in json.asArray {
       if let value = T.init(value) as! Element? {
@@ -318,7 +318,7 @@ extension Set: JSONCodable, DefaultInitable {
         if let error = json.error { throw error }
         return json.object
       }
-      throw JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: type(of: element))
+      return element as Any
     }))
   }
 }
@@ -332,12 +332,10 @@ extension Array: JSONCodable, DefaultInitable {
   
   public init(decode json: JSON) throws {
     guard let arr = json.array else { throw [Any].mismatchError(json: json) }
-    if let any = arr as? [Element] {
-      self = any
-    } else if let T = Element.self as? JSONDecodable.Type {
+    if let T = Element.self as? JSONDecodable.Type {
       self = arr.flatMap { T.init(JSON(any: $0)) as! Element? }
     } else {
-      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: Element.self)
+      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Element.self)
     }
   }
   
@@ -348,8 +346,21 @@ extension Array: JSONCodable, DefaultInitable {
         if let error = json.error { throw error }
         return json.object
       }
-      throw JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: type(of: element))
+      return element as Any
     }))
+  }
+}
+
+extension Array where Element == Any {
+  
+  public init?(_ json: JSON) {
+    guard let dic = (try? [Element](decode: json)) else { return nil }
+    self = dic
+  }
+  
+  public init(decode json: JSON) throws {
+    guard let arr = json.array else { throw [Any].mismatchError(json: json) }
+    self = arr
   }
 }
 
@@ -363,20 +374,18 @@ extension Dictionary: JSONCodable, DefaultInitable {
   public init(decode json: JSON) throws {
     guard let dict = json.dict else { throw [String: Any].mismatchError(json: json) }
     guard Key.self is String.Type else {
-      throw JSON.Error.typeMismatch(expected: String.self, actual: Key.self)
+      throw JSON.Error.notConfirmTo(protocol: String.self, actual: Key.self)
     }
-    if let any = dict as Any as? [Key: Value] {
-      self = any
-    } else if let T = Value.self as? JSONDecodable.Type {
+    if let T = Value.self as? JSONDecodable.Type {
       self = dict.flatMap { ($0.0 as! Key, T.init(JSON(any: $0.1)) as! Value?) }
     } else {
-      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: Value.self)
+      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Value.self)
     }
   }
   
   public var json: JSON {
     guard Key.self is String.Type else {
-      return .error(JSON.Error.typeMismatch(expected: String.self, actual: Key.self))
+      return .error(JSON.Error.notConfirmTo(protocol: String.self, actual: Key.self))
     }
     return JSON(try JSON.object(self.map { (key, value) in
       if let value = value as? JSONEncodable {
@@ -384,8 +393,21 @@ extension Dictionary: JSONCodable, DefaultInitable {
         if let error = json.error { throw error }
         return (key as! String, json.object)
       }
-      throw JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: type(of: value))
+      return (key as! String, value as Any)
     }))
+  }
+}
+
+extension Dictionary where Key == String, Value == Any {
+  
+  public init?(_ json: JSON) {
+    guard let dict = json.dict else { return nil }
+    self = dict
+  }
+  
+  public init(decode json: JSON) throws {
+    guard let dict = json.dict else { throw [String: Any].mismatchError(json: json) }
+    self = dict
   }
 }
 

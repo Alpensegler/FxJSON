@@ -6,7 +6,7 @@
 //
 //  The MIT License (MIT)
 //
-//  Copyright (c) 2016 Frain
+//  Copyright (c) 2016~2017 Frain
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to
@@ -67,7 +67,7 @@ public extension JSONEncodable {
         }
       }
       guard let serializable = type as? JSONEncodable.Type else {
-        mapper.json = .error(JSON.Error.typeMismatch(expected: JSONEncodable.self, actual: type))
+        mapper.json = .error(JSON.Error.notConfirmTo(protocol: JSONEncodable.self, actual: type))
         return
       }
       let value = serializable.fetchValue(from: selfPointer.advanced(by: offset))
@@ -200,7 +200,7 @@ extension JSONDecodable {
       if let transform = options.transform { getJSON = { json[index][transform] } }
       if let value = options.defaultValue {
         guard type(of: value) == property.type, let deserializable = property.type as? JSONDecodable.Type else {
-          throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: type(of: value))
+          throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: type(of: value))
         }
         return deserializable.init(getJSON()) ?? (value as! JSONDecodable)
       }
@@ -209,7 +209,7 @@ extension JSONDecodable {
       }
     }
     guard let deserializable = property.type as? JSONDecodable.Type else {
-      throw JSON.Error.typeMismatch(expected: JSONDecodable.self, actual: property.type)
+      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: property.type)
     }
     return try deserializable.init(decode: getJSON())
   }
@@ -462,7 +462,6 @@ struct Metadata {
     
     var properties: [Property] {
       let metaClassPointer = pointer.withMemoryRebound(to: Meta.self, capacity: 1) { $0 }
-//      let metaClassPointer = unsafeBitCast(pointer, to: UnsafePointer<Meta>.self)
       guard let superClass = metaClassPointer.pointee.superClass else { return [] }
       let superClassMetaData = Metadata(type: superClass)
       return superClassMetaData.properties + NominalTypeDescriptor(nominalType: self).properties()

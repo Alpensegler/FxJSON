@@ -6,7 +6,7 @@
 //
 //  The MIT License (MIT)
 //
-//  Copyright (c) 2016 Frain
+//  Copyright (c) 2016~2017 Frain
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to
@@ -28,7 +28,7 @@
 
 import Foundation
 
-extension JSON: MutableCollection {
+extension JSON: Collection {
     
   public enum Index: Comparable {
     
@@ -233,7 +233,7 @@ extension JSON {
     get {
       switch self {
       case let .array(arr):
-        if case 0..<arr.count = index { return JSON(any: arr[index]) }
+        if 0..<arr.count ~= index { return JSON(any: arr[index]) }
         return .error(Error.outOfBounds(arr: arr, index: index))
       case .error:
         return self

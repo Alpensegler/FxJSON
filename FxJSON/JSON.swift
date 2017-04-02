@@ -6,7 +6,7 @@
 //
 //  The MIT License (MIT)
 //
-//  Copyright (c) 2016 Frain
+//  Copyright (c) 2016~2017 Frain
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to
@@ -36,7 +36,7 @@ public enum JSON {
   case array([Any])
   case string(String)
   case number(NSNumber)
-  case bool(Bool)
+  case bool(Swift.Bool)
   case error(Swift.Error)
   case null
 }
@@ -80,15 +80,15 @@ public extension JSON {
     }
   }
   
-  var type: Any.Type {
+  var type: String {
     switch self {
-    case .object: return [String: Any].self
-    case .array: return [Any].self
-    case .string: return String.self
-    case .number: return NSNumber.self
-    case .bool: return Bool.self
-    case .error: return Swift.Error.self
-    case .null: return NSNull.self
+    case .object: return "object"
+    case .array: return "array"
+    case .string: return "string"
+    case .number: return "number"
+    case .bool: return "boolen"
+    case .error: return "error"
+    case .null: return "null"
     }
   }
   
@@ -114,7 +114,8 @@ public extension JSON {
   enum Error: Swift.Error, CustomStringConvertible {
     
     case initalize(error: Swift.Error)
-    case typeMismatch(expected: Any.Type, actual: Any.Type)
+    case typeMismatch(expected: Any.Type, actual: String)
+    case notConfirmTo(protocol: Any.Type, actual: Any.Type)
     case encodeToJSON(wrongObject: Any)
     case notExist(dict: [String: Any], key: String)
     case wrongType(subscript: JSON, key: Index)
@@ -129,6 +130,8 @@ public extension JSON {
         return "Initalize error, \(error))"
       case let .typeMismatch(expected, actual):
         return "TypeMismatch, expected \(expected), got \(actual))"
+      case let .notConfirmTo(`protocol`, actual):
+        return "\(actual) does not confirm to \(`protocol`)"
       case .encodeToJSON(wrongObject: let any):
         return "Error when encoding to JSON: \(any)"
       case .notExist(dict: let dict, key: let key):
