@@ -8,10 +8,10 @@
 
 # Features
 
-- [x] [Fast](#它很快)
-- [x] [Transforming between JSON and Swift model](#它很好用)
-- [x] [Specific transforming options](#它很全面)
-- [x] [Playgrounds demos](#1-使用-playground-查看)
+- [x] [Fast](#its-fast)
+- [x] [Transforming between JSON and Swift model](#its-simple)
+- [x] [Specific transforming options](#its-handy)
+- [x] [Playgrounds demos](#1-using-fxjsonplayground)
 - [x] [Date tansform](#4-转换)
 - [x] [All common type supported](#1-supported-types)
 - [x] [Protocol oriented](#2-protocols)
@@ -34,14 +34,14 @@ The [benchmarks](https://github.com/delba/JASON/tree/benchmarks) here is the sam
 
 #### Its simple
 
-By using `JSONCodable` protocol and `Struct` , you dont have to inherit `NSObject` , or write a  `init()` , or write a `mapping`  function, or make every property mutable, you just need to adopt one protocol and that's it. `Class` is also supproted (and also [subclass](#2-jsonmappable)), I strongly suggest you to use it in [FxJSON.playground](#1-使用-playground-查看) .
+By using `JSONCodable` protocol and `Struct` , you dont have to inherit `NSObject` , or write a  `init()` , or write a `mapping`  function, or make every property mutable, you just need to adopt one protocol and that's it. `Class` is also supproted (and also [subclass](#1-jsondecodable)), I strongly suggest you to use it in [FxJSON.playground](#1-using-fxjsonplayground) .
 
 ```swift
 struct User: JSONCodable {		//Adoptiong JSONCodable
   let userID: Int64
   let name: String
   let admin: Bool
-  let website: URL?				//URL is supported
+  let website: URL?			//URL is supported
   let lastLogin: Date			//Date is supported through DateTransform.default
   let friends: [User]			//Also your own type
 }
@@ -140,7 +140,7 @@ To use this library in your project manually you may:
 
 ## Usage
 
-1. [Using FxJSON.playground](#1-使用-playground-查看)
+1. [Using FxJSON.playground](#1-using-fxjsonplayground)
 2. [处理 JSON 数据](#2-处理-json-数据)
    1. [初始化](#1-初始化)
    2. [获取数据](#2-获取数据)
@@ -164,9 +164,9 @@ To use this library in your project manually you may:
 #### 1. 初始化
 
 ```swift
-let json = JSON(some)						//Type that supported
-let json = JSON(any: any)					//Any
-let json = JSON(jsonData: data)				//Data?
+let json = JSON(some)				//Type that supported
+let json = JSON(any: any)			//Any
+let json = JSON(jsonData: data)			//Data?
 let json = JSON(jsonString: jsonString)		//String?
 ```
 
