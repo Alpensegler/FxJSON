@@ -8,23 +8,23 @@
 
 # Features
 
-- [x] [快速](#它很快)
-- [x] [JSON 和自定义类型互相转化](#它很好用)
-- [x] [全面的转化选项](#它很全面)
-- [x] [Playgrounds 示例](#1-使用-playground-查看)
-- [x] [Date 转换和自定义转换方式](#4-转换)
-- [x] [所有常见类型支持](#1-supported-types)
-- [x] [全面灵活，面向协议](#2-protocols)
-- [x] [Swifty 的错误处理](#4-errors)
-- [x] [与多个主流库一同使用](#extend)
-- [x] [支持函数式编程](#funtional-programming)
+- [x] [Fast](#它很快)
+- [x] [Transforming between JSON and Swift model](#它很好用)
+- [x] [Specific transforming options](#它很全面)
+- [x] [Playgrounds demos](#1-使用-playground-查看)
+- [x] [Date tansform](#4-转换)
+- [x] [All common type supported](#1-supported-types)
+- [x] [Protocol oriented](#2-protocols)
+- [x] [Swifty way to handle errors](#4-errors)
+- [x] [Easy to work with other library](#extend)
+- [x] [Funtional programming support](#funtional-programming)
 
 
 # Overview
 
-#### 它很快
+#### Its fast
 
-这里用了和  [JASON](https://github.com/delba/JASON) 相同的 [benchmarks](https://github.com/delba/JASON/tree/benchmarks)（改成了 Swift 3 的语法），见 [PerformanceTests](https://github.com/FrainL/FxJSON/blob/master/FxJSONTests/PerformanceTests.swift) 。
+The [benchmarks](https://github.com/delba/JASON/tree/benchmarks) here is the same with  [JASON](https://github.com/delba/JASON) , see [PerformanceTests](https://github.com/FrainL/FxJSON/blob/master/FxJSONTests/PerformanceTests.swift) 。
 
 |            |         100          |        1000         |        10000        |    Δ    |
 | ---------- | :------------------: | :-----------------: | :-----------------: | :-----: |
@@ -32,33 +32,33 @@
 | SwiftyJSON | 0.007sec (16% STDEV) | 0.075sec (8% STDEV) | 0.678sec (8% STDEV) | 3.5~4.4 |
 | JASON      | 0.009sec (10% STDEV) | 0.083sec (3% STDEV) | 0.852sec (6% STDEV) | 4.5~5.0 |
 
-#### 它很好用
+#### Its simple
 
-使用 `JSONCodable` 协议配合 `Struct` ，不用继承自 `NSObject` ，不用实现一个  `init()` ，不用必须写一个 `mapping`  函数，不必声明所有的属性都为  `var` ，FxJSON 默认为你支持从 `JSON` 到该结构的转化。 `Class` 也同样支持（支持[继承](#2-jsonmappable)），建议你在 [Playgrounds](#1-使用-playground-查看) 中查看。
+By using `JSONCodable` protocol and `Struct` , you dont have to inherit `NSObject` , or write a  `init()` , or write a `mapping`  function, or make every property mutable, you just need to adopt one protocol and that's it. `Class` is also supproted (and also [subclass](#2-jsonmappable)), I strongly suggest you to use it in [FxJSON.playground](#1-使用-playground-查看) .
 
 ```swift
-struct User: JSONCodable {		//只需 JSONCodable 即可默认支持
+struct User: JSONCodable {		//Adoptiong JSONCodable
   let userID: Int64
   let name: String
   let admin: Bool
-  let website: URL?				//URL 默认转换
-  let lastLogin: Date			//Date 通过 DateTransform.default 转换
-  let friends: [User]			//自定义类型支持了协议也可以转换
+  let website: URL?				//URL is supported
+  let lastLogin: Date			//Date is supported through DateTransform.default
+  let friends: [User]			//Also your own type
 }
 ```
 
-#### 它很全面
+#### Its handy
 
-或者你也可以用 `static func specificOptions() -> [String: SpecificOption]` 函数自定一些属性转换方式（可选，详见 [Options](#3-options)）。
+Or you can use `static func specificOptions() -> [String: SpecificOption]` function to specify the way transforming (optional, see [Options](#3-options)).
 
 ```swift
-let webTransform = CustomTransform<String, String>.fromJSON { "https://\($0)" } //自定义转化
-let dateTransform = DateTransform.timeIntervalSince(.year1970) //也可设置 DateTransform.default
+let webTransform = CustomTransform<String, String>.fromJSON { "https://\($0)" }
+let dateTransform = DateTransform.timeIntervalSince(.year1970) //or you can set DateTransform.default
 
 extension User {
   static func specificOptions() -> [String: SpecificOption] {
     return [
-      "id": "userID",	//或者用 .index(["ids", 0]) 下标示地获取嵌套值
+      "id": "userID",
       "website": [.transform(webTransform), .ignoreIfNull],					
       "lastLogin": [.defaultValue(Date()), .transform(dateTransform)],
       "friends": .nonNil
@@ -67,22 +67,20 @@ extension User {
 }
 ```
 
-除此之外，FxJSON 提供对 `enum` 默认支持以及一个用于支持自带引用类型的 `JSONConvertable`，见 [Protocols](#2-protocols) 。
+#### Its elegant
 
-#### 它很优雅
-
-现在你就可以和[其他支持的类型](#1-supported-types)一样通过下面这种方式来从 `JSON` 转换：
+Now you can use the way below to desrialize the JSON data to swift Model , the same with [other supported types](#1-supported-types):
 
 ```swift
 let json = JSON(jsonData: jsonData) 				// Data?
 let json = JSON(jsonString: jsonString)				// String?
-if let user = User(json["data", "users", 1]) {		// 支持地址式下标
+if let user = User(json["data", "users", 1]) {		// Nested value
   // do some thing with user
 }
-let users = [User](nonNil: json["data", "users"])	// nonNil 表示得到不为空的结果
+let users = [User](nonNil: json["data", "users"])	// nonNil get non-optional value
 ```
 
-或者直接从 `Data?` 或 `JSON` 形式的 `String?` 转换：
+Or directy desrialize `Data?` or `JSONString?` :
 
 ```swift
 if let dict = try? [String: Any](jsonData: jsonData) {
@@ -90,7 +88,7 @@ if let dict = try? [String: Any](jsonData: jsonData) {
 }
 ```
 
-或者使用带非常 Swifty 的[错误处理](#4-errors)方式的 `decode` 转换：
+Error handling is very Swifty (see [errors](#4-errors)) :
 
 ```swift
 do {
@@ -100,7 +98,7 @@ do {
 }
 ```
 
-同时，这些支持的类型还能直接转化为 `JSON` 或者 `Data`、JSON 形式的 `String`
+And also, these type can easly transform to JSON or JSON data:
 
 ```swift
 let json = ["key": 123].json
@@ -108,13 +106,13 @@ let jsondata = try [123, 456, 789].jsonData()
 let jsonString = try user.jsonString()
 ```
 
-自定义 `JSON` 也很简单：
+Create a json is also easy:
 
 ```swift
 let json = ["code": 0, "data": ["users": users]] as JSON
 ```
 
-甚至还能这样：
+You can even do this:
 
 ```swift
 let json = JSON {
@@ -142,7 +140,7 @@ To use this library in your project manually you may:
 
 ## Usage
 
-1. [使用 Playgrounds 查看](#1-使用-playground-查看)
+1. [Using FxJSON.playground](#1-使用-playground-查看)
 2. [处理 JSON 数据](#2-处理-json-数据)
    1. [初始化](#1-初始化)
    2. [获取数据](#2-获取数据)
@@ -154,12 +152,12 @@ To use this library in your project manually you may:
    2. [JSONEncodable](#2-jsonencodable)
    3. [JSONConvertable](#3-jsonconvertable)
 
-### 1. 使用 playground 查看
+### 1. Using FxJSON.playground
 
-1. 打开 FxJSON.workspace
-2. 使用 iPhone 5s 以上模拟器 build FxJSON 
-3. 在 workspace 中打开 FxJSON.playground
-4. 你可以在 FxJSON.playground 的
+1. Open **FxJSON.xcworkspace**.
+2. Build the **FxJSON** scheme using iPhone 5s simulator (**Product** → **Build**).
+3. Open **FxJSON** playground in the **Project navigator**.
+4. You can see JSON data in playground **FxJSON** → **Resources** → **json.json**
 
 ### 2. 处理 JSON 数据
 

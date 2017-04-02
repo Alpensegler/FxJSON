@@ -40,7 +40,7 @@ extension User {
     ]
   }
 }
-//: You can now use the way below to Desrialize the JSON data to swift Model
+//: You can now use the way below to desrialize the JSON data to swift Model
 let json = JSON(jsonData: jsonData)
 //let json = JSON(jsonString: jsonString)
 do {
