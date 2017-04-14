@@ -289,7 +289,7 @@ extension ImplicitlyUnwrappedOptional: JSONCodable, DefaultInitable {
     }
     switch self {
     case let .some(value as JSONEncodable): return value.json
-    case .none: return nil
+    default: return nil
     }
   }
 }
