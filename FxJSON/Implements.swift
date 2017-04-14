@@ -269,28 +269,30 @@ extension Optional: JSONCodable {
   }
 }
 
-//extension ImplicitlyUnwrappedOptional: JSONCodable, DefaultInitable {
-//  
-//  public init?(_ json: JSON) {
-//    guard let dic = (try? ImplicitlyUnwrappedOptional<Wrapped>(decode: json)) else { return nil }
-//    self = dic
-//  }
-//  
-//  public init(decode json: JSON) throws {
-//    guard let T = Wrapped.self as? JSONDecodable.Type else {
-//      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Wrapped.self)
-//    }
-//    self = T.init(json) as! Wrapped?
-//  }
-//  
-//  public var json: JSON {
-//    guard Wrapped.self is JSONEncodable.Type else {
-//      return .error(JSON.Error.notConfirmTo(protocol: JSONEncodable.self, actual: Wrapped.self))
-//    }
-//    if case let .some(v as JSONEncodable) = self { return v.json }
-//    return nil
-//  }
-//}
+extension ImplicitlyUnwrappedOptional: JSONCodable, DefaultInitable {
+  
+  public init?(_ json: JSON) {
+    guard let dic = (try? ImplicitlyUnwrappedOptional<Wrapped>(decode: json)) else { return nil }
+    self = dic
+  }
+  
+  public init(decode json: JSON) throws {
+    guard let T = Wrapped.self as? JSONDecodable.Type else {
+      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Wrapped.self)
+    }
+    self = T.init(json) as! Wrapped?
+  }
+  
+  public var json: JSON {
+    guard Wrapped.self is JSONEncodable.Type else {
+      return .error(JSON.Error.notConfirmTo(protocol: JSONEncodable.self, actual: Wrapped.self))
+    }
+    switch self {
+    case let .some(value as JSONEncodable): return value.json
+    case .none: return nil
+    }
+  }
+}
 
 extension Set: JSONCodable, DefaultInitable {
   
