@@ -100,7 +100,7 @@ public extension JSON {
     case notConfirmTo(protocol: Any.Type, actual: Any.Type)
     case encodeToJSON(wrongObject: Any)
     case notExist(dict: [String: Any], key: String)
-    case wrongType(subscript: JSON, key: JSONKeyConvertable)
+    case wrongType(subscript: JSON, key: JSONKeyConvertible)
     case outOfBounds(arr: [Any], index: Int)
     case formatter(format: String, value: String)
     case customTransfrom(source: Any)

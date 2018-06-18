@@ -183,35 +183,27 @@ extension JSON.Wrapper {
 
 public extension JSON.Wrapper {
   
-  subscript(ignoreIfNull path: JSONKeyConvertable...) -> JSON.Wrapper {
-    get {
-      getJSON.append { $0[ignoreIfNull: path] }
-      setJSON.append { value in { (json: inout JSON) in json[ignoreIfNull: path] = value } }
-      return self
-    }
+  subscript(ignoreIfNull path: JSONKeyConvertible...) -> JSON.Wrapper {
+    getJSON.append { $0[ignoreIfNull: path] }
+    setJSON.append { value in { (json: inout JSON) in json[ignoreIfNull: path] = value } }
+    return self
   }
   
-  subscript(path: JSONKeyConvertable...) -> JSON.Wrapper {
-    get {
-      getJSON.append { $0[create: path] }
-      setJSON.append { value in { (json: inout JSON) in json[create: path] = value } }
-      return self
-    }
+  subscript(path: JSONKeyConvertible...) -> JSON.Wrapper {
+    getJSON.append { $0[create: path] }
+    setJSON.append { value in { (json: inout JSON) in json[create: path] = value } }
+    return self
   }
   
-  subscript(index: JSONKeyConvertable) -> JSON.Wrapper {
-    get {
-      getJSON.append { $0[create: index] }
-      setJSON.append { value in { (json: inout JSON) in json[create: index] = value } }
-      return self
-    }
+  subscript(index: JSONKeyConvertible) -> JSON.Wrapper {
+    getJSON.append { $0[create: index] }
+    setJSON.append { value in { (json: inout JSON) in json[create: index] = value } }
+    return self
   }
   
   subscript(transform: Transform) -> JSON.Wrapper {
-    get {
-      getJSON.append { $0[transform] }
-      setJSON.append { value in { (json: inout JSON) in json[transform] = value } }
-      return self
-    }
+    getJSON.append { $0[transform] }
+    setJSON.append { value in { (json: inout JSON) in json[transform] = value } }
+    return self
   }
 }

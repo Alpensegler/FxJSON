@@ -30,18 +30,18 @@ import Foundation
 
 //MARK: - Subscript
 
-public protocol JSONKeyConvertable {
+public protocol JSONKeyConvertible {
   var key: String { get }
 }
 
-extension JSONKeyConvertable where Self: CustomStringConvertible {
+extension JSONKeyConvertible where Self: CustomStringConvertible {
   public var key: String {
     return description
   }
 }
 
-extension String: JSONKeyConvertable { }
-extension Int: JSONKeyConvertable { }
+extension String: JSONKeyConvertible { }
+extension Int: JSONKeyConvertible { }
 
 public extension JSON {
   
@@ -82,7 +82,7 @@ public extension JSON {
     }
   }
   
-  subscript(path: JSONKeyConvertable...) -> JSON {
+  subscript(path: JSONKeyConvertible...) -> JSON {
     get {
       return self[path]
     }
@@ -91,7 +91,7 @@ public extension JSON {
     }
   }
   
-  subscript(path: [JSONKeyConvertable]) -> JSON {
+  subscript(path: [JSONKeyConvertible]) -> JSON {
     get {
       return path.reduce(self) { $0[$1] }
     }
@@ -103,7 +103,7 @@ public extension JSON {
     }
   }
   
-  subscript(key: JSONKeyConvertable) -> JSON {
+  subscript(key: JSONKeyConvertible) -> JSON {
     get {
       return self[dynamicMember: key.key]
     }
@@ -126,7 +126,7 @@ public extension JSON {
 
 extension JSON {
   
-  subscript(ignoreIfNull path: [JSONKeyConvertable]) -> JSON {
+  subscript(ignoreIfNull path: [JSONKeyConvertible]) -> JSON {
     get {
       return self[create: path]
     }
@@ -136,7 +136,7 @@ extension JSON {
     }
   }
   
-  subscript(create path: [JSONKeyConvertable]) -> JSON {
+  subscript(create path: [JSONKeyConvertible]) -> JSON {
     get {
       return path.reduce(self) { $0[create: $1] }
     }
@@ -148,7 +148,7 @@ extension JSON {
     }
   }
 
-  subscript(create key: JSONKeyConvertable) -> JSON {
+  subscript(create key: JSONKeyConvertible) -> JSON {
     get {
       switch (self, Int(key.key)) {
       case let (.array(arr), index?):

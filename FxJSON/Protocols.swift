@@ -343,7 +343,7 @@ public func <<<T: JSONEncodable>(lhs: JSON.Wrapper, rhs: T) {
   lhs.set(json: rhs.json)
 }
 
-public func <<<T: JSONDecodable>(lhs: JSON, rhs: JSONKeyConvertable) -> T? {
+public func <<<T: JSONDecodable>(lhs: JSON, rhs: JSONKeyConvertible) -> T? {
   return try? wrap(lhs[rhs]).decode()
 }
 
