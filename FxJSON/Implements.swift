@@ -30,40 +30,39 @@ import Foundation
 
 //MARK: - JSON
 
-extension JSON: JSONEncodable {
-  
-  public var json: JSON {
-    return self
-  }
+extension JSON {
   
   public init(_ object: @autoclosure () throws -> JSONEncodable) {
     do { try self = object().json } catch { self = .error(error) }
   }
   
-  public init(operate: (Mapper) -> ()) {
-    let mapper = Mapper(json: .object([:]))
-    operate(mapper)
-    self = mapper.json
+  public init(operate: (Wrapper) -> ()) {
+    let wrapper = wrap(.object([:]))
+    operate(wrapper)
+    self = wrapper.json
   }
+}
+
+extension JSON.Wrapper {
   
-  public func transformed(operate: (Mapper) -> ()) -> JSON {
-    let mapper = Mapper(json: self)
-    operate(mapper)
-    return(mapper.json)
+  public func transformed(operate: (JSON.Wrapper) -> ()) -> JSON.Wrapper {
+    let wrapper = self
+    operate(wrapper)
+    return wrapper
   }
   
   public func decode<T: JSONDecodable>() throws -> T {
-    return try T(decode: self)
+    return try T(decode: json)
   }
   
   public func map<T: JSONDecodable, U: JSONEncodable>(
-    _ transform: (T) throws -> U) rethrows -> JSON {
-    return try T(self).map(transform).map { $0.json } ?? self
+    _ transform: (T) throws -> U) rethrows -> JSON.Wrapper {
+    return try T(json).map(transform).map { $0.json }.map(wrap) ?? self
   }
   
   public func flatMap<T: JSONDecodable>(
-    _ transform: (T) throws -> JSON) rethrows -> JSON {
-    return try T(self).map(transform) ?? self
+    _ transform: (T) throws -> JSON) rethrows -> JSON.Wrapper {
+    return try T(json).map(transform).map(wrap) ?? self
   }
 }
 
@@ -96,84 +95,84 @@ extension Bool: JSONCodable, DefaultInitable {
 extension Float: JSONCodable, DefaultInitable {
   
   public init(decode json: JSON) throws {
-    guard case let .number(num) = json else { throw Float.mismatchError(json: json) }
-    self = num.floatValue
+    guard case let .number(.double(num)) = json else { throw Float.mismatchError(json: json) }
+    self = Float(num)
   }
   
   public var json: JSON {
-    return .number(NSNumber(value: self))
+    return .number(.double(Double(self)))
   }
 }
 
 extension Double: JSONCodable, DefaultInitable {
   
   public init(decode json: JSON) throws {
-    guard case let .number(num) = json else { throw Double.mismatchError(json: json) }
-    self = num.doubleValue
+    guard case let .number(.double(num)) = json else { throw Double.mismatchError(json: json) }
+    self = num
   }
   
   public var json: JSON {
-    return .number(NSNumber(value: self))
+    return .number(.double(self))
   }
 }
 
 extension Int: JSONCodable, DefaultInitable {
   
   public init(decode json: JSON) throws {
-    guard case let .number(num) = json else { throw Int.mismatchError(json: json) }
-    self = num.intValue
+    guard case let .number(.int(num)) = json else { throw Int.mismatchError(json: json) }
+    self = num
   }
   
   public var json: JSON {
-    return .number(NSNumber(value: self))
+    return .number(.int(self))
   }
 }
 
 extension Int8: JSONCodable, DefaultInitable {
   
   public init(decode json: JSON) throws {
-    guard case let .number(num) = json else { throw Int8.mismatchError(json: json) }
-    self = num.int8Value
+    guard case let .number(.int(num)) = json else { throw Int8.mismatchError(json: json) }
+    self.init(num)
   }
   
   public var json: JSON {
-    return .number(NSNumber(value: self))
+    return .number(.int(Int(self)))
   }
 }
 
 extension Int16: JSONCodable, DefaultInitable {
   
   public init(decode json: JSON) throws {
-    guard case let .number(num) = json else { throw Int16.mismatchError(json: json) }
-    self = num.int16Value
+    guard case let .number(.int(num)) = json else { throw Int16.mismatchError(json: json) }
+    self.init(num)
   }
   
   public var json: JSON {
-    return .number(NSNumber(value: self))
+    return .number(.int(Int(self)))
   }
 }
 
 extension Int32: JSONCodable, DefaultInitable {
   
   public init(decode json: JSON) throws {
-    guard case let .number(num) = json else { throw Int32.mismatchError(json: json) }
-    self = num.int32Value
+    guard case let .number(.int(num)) = json else { throw Int32.mismatchError(json: json) }
+    self.init(num)
   }
   
   public var json: JSON {
-    return .number(NSNumber(value: self))
+    return .number(.int(Int(self)))
   }
 }
 
 extension Int64: JSONCodable, DefaultInitable {
   
   public init(decode json: JSON) throws {
-    guard case let .number(num) = json else { throw Int64.mismatchError(json: json) }
-    self = num.int64Value
+    guard case let .number(.int(num)) = json else { throw Int64.mismatchError(json: json) }
+    self.init(num)
   }
   
   public var json: JSON {
-    return .number(NSNumber(value: self))
+    return .number(.int(Int(self)))
   }
 }
 
@@ -198,14 +197,14 @@ extension Date: JSONCodable {
         throw JSON.Error.formatter(format: formatter.dateFormat, value: dateString)
       }
       self = date
-    case .number(let v):
+    case .number(.double(let v)):
       let since: DateTransform.Since = {
         if case .timeIntervalSince(let since) = DateTransform.default {
           return since
         }
         return .default
       }()
-      self.init(timeIntervalSince1970: v.doubleValue + since.timeInterval)
+      self.init(timeIntervalSince1970: v + since.timeInterval)
     default:
       throw DateTransform.default.objectType.mismatchError(json: json)
     }
@@ -216,7 +215,7 @@ extension Date: JSONCodable {
     case .formatter(let formatetr):
       return .string(formatetr.string(from: self))
     case .timeIntervalSince(let since):
-      return .number(NSNumber(value: timeIntervalSince1970 - since.timeInterval))
+      return .number(.double(timeIntervalSince1970 - since.timeInterval))
     }
   }
 }
@@ -227,7 +226,7 @@ extension URL: JSONCodable {
     guard let urlString = String(json)?
       .addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
       else { throw String.mismatchError(json: json) }
-    if urlString.characters.isEmpty, let url = URL(string: "about://") { self = url; return }
+    if urlString.isEmpty, let url = URL(string: "about://") { self = url; return }
     guard let url = URL(string: urlString) else {
       throw JSON.Error.other(description: "URL init error, urlString is \(urlString)")
     }
@@ -269,32 +268,7 @@ extension Optional: JSONCodable {
   }
 }
 
-extension ImplicitlyUnwrappedOptional: JSONCodable, DefaultInitable {
-  
-  public init?(_ json: JSON) {
-    guard let dic = (try? ImplicitlyUnwrappedOptional<Wrapped>(decode: json)) else { return nil }
-    self = dic
-  }
-  
-  public init(decode json: JSON) throws {
-    guard let T = Wrapped.self as? JSONDecodable.Type else {
-      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Wrapped.self)
-    }
-    self = T.init(json) as! Wrapped?
-  }
-  
-  public var json: JSON {
-    guard Wrapped.self is JSONEncodable.Type else {
-      return .error(JSON.Error.notConfirmTo(protocol: JSONEncodable.self, actual: Wrapped.self))
-    }
-    switch self {
-    case let .some(value as JSONEncodable): return value.json
-    default: return nil
-    }
-  }
-}
-
-extension Set: JSONCodable, DefaultInitable {
+extension Set: JSONDecodable where Element: JSONDecodable {
   
   public init?(_ json: JSON) {
     guard let dic = (try? Set<Element>(decode: json)) else { return nil }
@@ -303,70 +277,58 @@ extension Set: JSONCodable, DefaultInitable {
   
   public init(decode json: JSON) throws {
     self.init()
-    guard let T = Element.self as? JSONDecodable.Type else {
-      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Element.self)
-    }
-    for value in json.asArray {
-      if let value = T.init(value) as! Element? {
+    for value in wrap(json).asArray {
+      if let value = Element.init(value) {
         self.insert(value)
       }
     }
   }
-  
-  public var json: JSON {
-    return JSON(try JSON.array(self.map { element in
-      if let element = element as? JSONEncodable {
-        let json = element.json
-        if let error = json.error { throw error }
-        return json.object
-      }
-      return element as Any
-    }))
-  }
 }
 
-extension Array: JSONCodable, DefaultInitable {
+extension Set: JSONEncodable where Element: JSONEncodable {
   
-  public init?(_ json: JSON) {
-    guard let dic = (try? [Element](decode: json)) else { return nil }
-    self = dic
-  }
-  
-  public init(decode json: JSON) throws {
-    guard let arr = json.array else { throw [Any].mismatchError(json: json) }
-    if let T = Element.self as? JSONDecodable.Type {
-      self = arr.flatMap { T.init(JSON(any: $0)) as! Element? }
-    } else {
-      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Element.self)
+  public var json: JSON {
+    do {
+      return JSON.array(try map { element in
+        let json = element.json
+        if case let .error(error) = json { throw error }
+        return wrap(json).object
+        })
+    } catch {
+      return .error(error)
     }
   }
-  
-  public var json: JSON {
-    return JSON(try JSON.array(self.map { element in
-      if let element = element as? JSONEncodable {
-        let json = element.json
-        if let error = json.error { throw error }
-        return json.object
-      }
-      return element as Any
-    }))
-  }
 }
 
-extension Array where Element == Any {
+extension Array: JSONDecodable where Element: JSONDecodable {
   
   public init?(_ json: JSON) {
-    guard let dic = (try? [Element](decode: json)) else { return nil }
-    self = dic
+    guard let array = (try? [Element](decode: json)) else { return nil }
+    self = array
   }
   
   public init(decode json: JSON) throws {
-    guard let arr = json.array else { throw [Any].mismatchError(json: json) }
-    self = arr
+    guard let arr = wrap(json).array else { throw [Element].mismatchError(json: json) }
+      self = arr.compactMap { Element.init(JSON(any: $0)) }
   }
 }
 
-extension Dictionary: JSONCodable, DefaultInitable {
+extension Array: JSONEncodable where Element: JSONEncodable {
+  
+  public var json: JSON {
+    do {
+      return JSON.array(try map { element in
+        let json = element.json
+        if case let .error(error) = json { throw error }
+        return wrap(json).object
+      })
+    } catch {
+      return .error(error)
+    }
+  }
+}
+
+extension Dictionary: JSONDecodable where Key == String, Value: JSONDecodable {
   
   public init?(_ json: JSON) {
     guard let dic = (try? [Key: Value](decode: json)) else { return nil }
@@ -374,42 +336,23 @@ extension Dictionary: JSONCodable, DefaultInitable {
   }
   
   public init(decode json: JSON) throws {
-    guard let dict = json.dict else { throw [String: Any].mismatchError(json: json) }
-    guard Key.self is String.Type else {
-      throw JSON.Error.notConfirmTo(protocol: String.self, actual: Key.self)
-    }
-    if let T = Value.self as? JSONDecodable.Type {
-      self = dict.flatMap { ($0.0 as! Key, T.init(JSON(any: $0.1)) as! Value?) }
-    } else {
-      throw JSON.Error.notConfirmTo(protocol: JSONDecodable.self, actual: Value.self)
-    }
-  }
-  
-  public var json: JSON {
-    guard Key.self is String.Type else {
-      return .error(JSON.Error.notConfirmTo(protocol: String.self, actual: Key.self))
-    }
-    return JSON(try JSON.object(self.map { (key, value) in
-      if let value = value as? JSONEncodable {
-        let json = value.json
-        if let error = json.error { throw error }
-        return (key as! String, json.object)
-      }
-      return (key as! String, value as Any)
-    }))
+    guard let dict = wrap(json).dict else { throw [String: Value].mismatchError(json: json) }
+    self = dict.flatMap { ($0, Value.init(JSON(any: $1))) }
   }
 }
 
-extension Dictionary where Key == String, Value == Any {
+extension Dictionary: JSONEncodable where Key == String, Value: JSONEncodable {
   
-  public init?(_ json: JSON) {
-    guard let dict = json.dict else { return nil }
-    self = dict
-  }
-  
-  public init(decode json: JSON) throws {
-    guard let dict = json.dict else { throw [String: Any].mismatchError(json: json) }
-    self = dict
+  public var json: JSON {
+    do {
+      return JSON.object(try map { (key, value) in
+        let json = value.json
+        if case let .error(error) = json { throw error }
+        return (key, wrap(json).object)
+      })
+    } catch {
+      return .error(error)
+    }
   }
 }
 

@@ -72,7 +72,7 @@ class SubscriptTests: XCTestCase {
     json["arr", 3] = 0
     json["arr"][4][0][0] = 0
     
-    XCTAssertEqual(json["arr", 1].object as? Float, 2.899)
+    XCTAssertEqual(json["arr", 1].object as? Double, 2.899)
     XCTAssertEqual(json["arr", 2].object as? Double, 3.567)
     XCTAssertEqual(json["arr", 3].object as? Int, 0)
     XCTAssertEqual(json["arr"][4][0][0], 0)
