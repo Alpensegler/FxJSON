@@ -8,10 +8,13 @@ var json = JSON()
 json.string = "string"
 json.int = 123
 json.double = 123.123
+json.object = json
 
-debugPrint(wrap(json))
+wrap(json)
 
 let dict = ["aaa":123, "bbb":123]
+
+let keyPath = \JSON.string
 
 dict.json
 
@@ -29,17 +32,21 @@ func _getFieldAt(
     _ ctx: UnsafeRawPointer
 )
 
-final class User: NSObject {
+class User {
     var name: String = ""
     var age: Int = 0
 }
 
 var test = "hello"
 
-_getFieldAt(User.self, 0, { name, type, ctx in
+_getFieldAt(User.self, 1, { name, type, ctx in
     let name = String(cString: name)
     let type = unsafeBitCast(type, to: Any.Type.self)
+    if let jsonDecodable = type as? JSONDecodable.Type {
+        print(true)
+    }
     print("\(name): \(type)")
     print(ctx.assumingMemoryBound(to: String.self).pointee)
-}, &test) // prints: age: Int, hello
+}, &test)
+
 

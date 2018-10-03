@@ -114,7 +114,7 @@ public extension JSON.Wrapper {
 
 //MARK: - StringConvertible
 
-extension JSON.Wrapper: CustomStringConvertible, CustomDebugStringConvertible {
+extension JSON.Wrapper: CustomStringConvertible, CustomDebugStringConvertible, CustomPlaygroundDisplayConvertible {
   
   public var description: String {
     return (try? jsonString(withOptions: .prettyPrinted)) ?? "\(object)"
@@ -123,15 +123,23 @@ extension JSON.Wrapper: CustomStringConvertible, CustomDebugStringConvertible {
   public var debugDescription: String {
     return "\(type): " + ((try? jsonString()) ?? "\(object)")
   }
+  
+  public var playgroundDescription: Any {
+    return object
+  }
 }
 
-extension JSON.Number: CustomStringConvertible, CustomDebugStringConvertible {
+extension JSON.Number: CustomStringConvertible, CustomDebugStringConvertible, CustomPlaygroundDisplayConvertible {
   public var description: String {
     return String(describing: object)
   }
   
   public var debugDescription: String {
     return String(describing: object)
+  }
+  
+  public var playgroundDescription: Any {
+    return object
   }
 }
 
