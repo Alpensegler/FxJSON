@@ -97,9 +97,9 @@ class InitTests: XCTestCase {
   func testNumber() {
     let json: JSON = 1234567890.123456
     XCTAssertEqual(json, JSON(any: 1234567890.123456))
-    XCTAssertEqual(json.object as? Int, 1234567890)
     XCTAssertEqual(json.object as? Double, 1234567890.123456)
-    XCTAssertEqual(json.object as? Float, 1234567890.123456)
+    XCTAssertNotEqual(json.object as? Int, 1234567890)
+    XCTAssertNotEqual(json.object as? Float, 1234567890.123456)
   }
   
   func testNil() {

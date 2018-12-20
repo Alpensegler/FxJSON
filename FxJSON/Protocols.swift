@@ -34,7 +34,7 @@ public protocol JSONEncodable {
   
   var json: JSON { get }
   
-  func encode(mapper: JSON.Mapper)
+  func encode(wrapper: JSON.Wrapper)
   
   static func specificOptions() -> [String: SpecificOption]
 }
@@ -45,18 +45,18 @@ public extension JSONEncodable {
     return JSON(operate: encode)
   }
   
-  func encode(mapper: JSON.Mapper) {
+  func encode(wrapper: JSON.Wrapper) {
     let type = self is DefaultInitable ? Mirror(reflecting: self).subjectType : Self.self
     let info = Metadata(type: type)
     var mutableSelf = self
     let selfPointer = info.getPointer(of: &mutableSelf)
     for (name, type, offset) in info.properties {
-      var index = JSON.Index(stringLiteral: name)
+      let index = name
       var setJSON = { (json: inout JSON, value: JSON) in json[create: index] = value }
       if let options = Self.specificOptions()[name] {
         if options.contains(.ignore) { continue }
         if options.contains(.ignoreIfNull) { setJSON = { $0[ignoreIfNull: [index]] = $1 } }
-        if let idx = options.index { index = idx }
+//        if let idx = options.index { index = idx }
         let set = setJSON
         if let transform = options.transform {
           setJSON = { json, value in
@@ -67,11 +67,11 @@ public extension JSONEncodable {
         }
       }
       guard let serializable = type as? JSONEncodable.Type else {
-        mapper.json = .error(JSON.Error.notConfirmTo(protocol: JSONEncodable.self, actual: type))
+        wrapper.json = .error(JSON.Error.notConfirmTo(protocol: JSONEncodable.self, actual: type))
         return
       }
       let value = serializable.fetchValue(from: selfPointer.advanced(by: offset))
-      setJSON(&mapper.json, value.json)
+      setJSON(&wrapper.json, value.json)
     }
   }
   
@@ -80,19 +80,19 @@ public extension JSONEncodable {
   }
   
   func jsonData(withOptions opt: JSONSerialization.WritingOptions = []) throws -> Data {
-    return try json.jsonData(withOptions: opt)
+    return try wrap(json).jsonData(withOptions: opt)
   }
   
   func jsonString(withOptions opt: JSONSerialization.WritingOptions = [],
                   encoding ecd: String.Encoding = String.Encoding.utf8) throws -> String {
-    return try json.jsonString(withOptions: opt, encoding: ecd)
+    return try wrap(json).jsonString(withOptions: opt, encoding: ecd)
   }
 }
 
 public extension JSONEncodable where Self: RawRepresentable, Self.RawValue: JSONEncodable {
   
-  func encode(mapper: JSON.Mapper) {
-    mapper.json = self.rawValue.json
+  func encode(wrapper: JSON.Wrapper) {
+    wrapper.json = self.rawValue.json
   }
 }
 
@@ -100,10 +100,6 @@ extension JSONEncodable {
   
   static func fetchValue(from pointer: UnsafeRawPointer) -> JSONEncodable {
     return pointer.load(as: Self.self)
-  }
-  
-  static func mismatchError(json: JSON) -> Error {
-    return json.error ?? JSON.Error.typeMismatch(expected: Self.self, actual: json.type)
   }
 }
 
@@ -127,7 +123,7 @@ public extension JSONDecodable {
   
   init(decode json: JSON) throws {
     let object = UnsafeMutablePointer<Self>.allocate(capacity: 1)
-    defer { object.deallocate(capacity: 1) }
+    defer { object.deallocate() }
     let rawObject = UnsafeMutableRawPointer(object)
     let info = Metadata(type: Self.self)
     let options = Self.specificOptions()
@@ -160,6 +156,13 @@ public extension JSONDecodable {
   }
 }
 
+extension JSONDecodable {
+  
+  static func mismatchError(json: JSON) -> Error {
+    return wrap(json).error ?? JSON.Error.typeMismatch(expected: Self.self, actual: wrap(json).type)
+  }
+}
+
 public extension JSONDecodable where Self: DefaultInitable {
   
   init(decode json: JSON) throws {
@@ -173,7 +176,7 @@ public extension JSONDecodable where Self: DefaultInitable {
     let selfPointer = info.getPointer(of: &self)
     try info.properties.forEach {
       let value = try Self.fetchValue(property: $0, json: json, from: options)
-      type(of: value).update(value, into: selfPointer.advanced(by: $0.offset))
+      Swift.type(of: value).update(value, into: selfPointer.advanced(by: $0.offset))
     }
   }
 }
@@ -192,11 +195,11 @@ where Self: RawRepresentable, Self.RawValue: JSONDecodable {
 extension JSONDecodable {
   
   static func fetchValue(property: Metadata.Property, json: JSON, from options: [String: SpecificOption]) throws -> JSONDecodable {
-    var index = JSON.Index(stringLiteral: property.key)
+    let index = property.key
     var getJSON = { json[index] }
     if let options = options[property.key] {
-      if let idx = options.index { index = idx }
-      if let idx = options.alertIndex, json[index].isError { index = idx }
+//      if let idx = options.index { index = idx }
+//      if let idx = options.alertIndex, wrap(json[index]).isError { index = idx }
       if let transform = options.transform { getJSON = { json[index][transform] } }
       if let value = options.defaultValue {
         guard type(of: value) == property.type, let deserializable = property.type as? JSONDecodable.Type else {
@@ -284,12 +287,12 @@ public struct SpecificOption: OptionSet {
   
   public let rawValue: Int
   
-  let index: JSON.Index?
-  let alertIndex: JSON.Index?
+  let index: JSON.KeyPath?
+  let alertIndex: JSON.KeyPath?
   let transform: Transform?
   let defaultValue: Any?
   
-  init(rawValue: Int, index: JSON.Index? = nil, alertIndex: JSON.Index? = nil,
+  init(rawValue: Int, index: JSON.KeyPath? = nil, alertIndex: JSON.KeyPath? = nil,
        transform: Transform? = nil, defaultValue: Any? = nil) {
     self.rawValue = rawValue
     self.index = index
@@ -311,12 +314,10 @@ public struct SpecificOption: OptionSet {
   }
   
   public mutating func formUnion(_ other: SpecificOption) {
-    let combinedIdx = index.flatMap { idx in other.index.map { JSON.Index.path([idx, $0]) } }
-    let combinedAidx = alertIndex.flatMap { idx in other.alertIndex.map { JSON.Index.path([idx, $0]) } }
     self = SpecificOption(
       rawValue: rawValue | other.rawValue,
-      index: combinedIdx ?? index ?? other.index,
-      alertIndex: combinedAidx ?? alertIndex ?? other.alertIndex,
+      index: index ?? other.index,
+      alertIndex: alertIndex ?? other.alertIndex,
       transform: transform ?? other.transform,
       defaultValue: defaultValue ?? other.defaultValue
     )
@@ -330,103 +331,20 @@ public struct SpecificOption: OptionSet {
   }
 }
 
-extension SpecificOption: ExpressibleByStringLiteral {
-  
-  public init(stringLiteral value: String) {
-    self = SpecificOption.index(.key(.key(value)))
-  }
-  
-  public init(unicodeScalarLiteral value: String) {
-    self = SpecificOption.index(.key(.key(value)))
-  }
-  
-  public init(extendedGraphemeClusterLiteral value: String) {
-    self = SpecificOption.index(.key(.key(value)))
-  }
-}
-
-
-//MARK: - JSONMapper
-
-public extension JSON {
-  
-  final class Mapper {
-    
-    var json: JSON
-    
-    var getJSON: [(JSON) -> JSON] = []
-    var setJSON: [(JSON) -> (inout JSON) -> ()] = []
-    
-    init(json: JSON) {
-      self.json = json
-    }
-    
-    func set(json: JSON) {
-      setJSON(with: json)(&self.json)
-    }
-    
-    private func setJSON(with value: JSON) -> (inout JSON) -> () {
-      guard !setJSON.isEmpty else { return { $0 = value } }
-      let (get, set) = (getJSON.remove(at: 0), setJSON.remove(at: 0))
-      return { json in
-        var subJSON = get(json)
-        self.setJSON(with: value)(&subJSON)
-        if subJSON.isError { json = subJSON; return }
-        set(subJSON)(&json)
-      }
-    }
-  }
-}
-
-public extension JSON.Mapper {
-  
-  subscript(ignoreIfNull path: JSON.Index...) -> JSON.Mapper {
-    get {
-      getJSON.append { $0[ignoreIfNull: path] }
-      setJSON.append { value in { (json: inout JSON) in json[ignoreIfNull: path] = value } }
-      return self
-    }
-  }
-  
-  subscript(path: JSON.Index...) -> JSON.Mapper {
-    get {
-      getJSON.append { $0[create: path] }
-      setJSON.append { value in { (json: inout JSON) in json[create: path] = value } }
-      return self
-    }
-  }
-  
-  subscript(index: JSON.Index) -> JSON.Mapper {
-    get {
-      getJSON.append { $0[create: index] }
-      setJSON.append { value in { (json: inout JSON) in json[create: index] = value } }
-      return self
-    }
-  }
-  
-  subscript(transform: Transform) -> JSON.Mapper {
-    get {
-      getJSON.append { $0[transform] }
-      setJSON.append { value in { (json: inout JSON) in json[transform] = value } }
-      return self
-    }
-  }
-}
-
 //MARK: - operator
 
 postfix operator <
 
 public postfix func <<T: JSONDecodable>(json: JSON) throws -> T {
-  return try json.decode()
+  return try wrap(json).decode()
 }
 
-public func <<<T: JSONEncodable>(lhs: JSON.Mapper, rhs: T) {
+public func <<<T: JSONEncodable>(lhs: JSON.Wrapper, rhs: T) {
   lhs.set(json: rhs.json)
 }
 
-public func <<<T: JSONDecodable>(lhs: JSON, rhs: JSON.Index) -> T? {
-  return try? lhs[rhs].decode()
+public func <<<T: JSONDecodable>(lhs: JSON, rhs: JSONKeyConvertible) -> T? {
+  return try? wrap(lhs[rhs]).decode()
 }
 
 //MARK: - Metadata
@@ -558,7 +476,7 @@ struct Metadata {
     
     func properties() -> [Property] {
       var fieldNamePointer = self.fieldNamePointer
-      return (0..<numberOfFields).flatMap { i in
+      return (0..<numberOfFields).compactMap { i in
         guard let key = String(validatingUTF8: fieldNamePointer) else { return nil }
         while fieldNamePointer.pointee != 0 {
           fieldNamePointer = fieldNamePointer.advanced(by: 1)

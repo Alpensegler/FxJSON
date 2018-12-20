@@ -65,7 +65,7 @@ class BasicClass: JSONDecodable, JSONEncodable {
     signUpTime  = try json["signUpTime"]<
   }
   
-  func encode(mapper: JSON.Mapper) {
+  func encode(mapper: JSON.Wrapper) {
     mapper["userID"]                    << userID
     mapper["name"]                      << name
     mapper["admin"]                     << admin
@@ -85,7 +85,7 @@ class UserClass: BasicClass {
     try super.init(decode: json)
   }
   
-  override func encode(mapper: JSON.Mapper) {
+  override func encode(mapper: JSON.Wrapper) {
     mapper[ignoreIfNull: "website"]  << website
     mapper["friends"]                << friends
     super.encode(mapper: mapper)

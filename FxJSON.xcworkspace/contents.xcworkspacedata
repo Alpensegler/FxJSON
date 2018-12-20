@@ -7,4 +7,7 @@
    <FileRef
       location = "group:FxJSON.playground">
    </FileRef>
+   <FileRef
+      location = "group:Test.playground">
+   </FileRef>
 </Workspace>

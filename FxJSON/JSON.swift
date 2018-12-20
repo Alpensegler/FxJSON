@@ -30,30 +30,36 @@ import Foundation
 
 //MARK: - JSON
 
+@dynamicMemberLookup
 public enum JSON {
+  
+  public enum Number {
+    case double(Double)
+    case int(Int)
     
+    var object: Any {
+      switch self {
+      case .double(let any as Any),
+           .int(let any as Any):
+        return any
+      }
+    }
+  }
+  
+  public struct Null { }
+  
   case object([String: Any])
   case array([Any])
   case string(String)
-  case number(NSNumber)
-  case bool(Swift.Bool)
+  case number(Number)
+  case bool(Bool)
   case error(Swift.Error)
   case null
 }
 
-public extension JSON {
+//MARK: - Init
 
-  var object: Any {
-    switch self {
-    case let .object(any): return any
-    case let .array(any): return any
-    case let .string(any): return any
-    case let .number(any): return any
-    case let .bool(any): return any
-    case let .error(any): return any
-    default: return NSNull()
-    }
-  }
+public extension JSON {
   
   init() {
     self = .null
@@ -70,40 +76,16 @@ public extension JSON {
     case let num as NSNumber:
       if CFGetTypeID(num) == CFBooleanGetTypeID() {
         self = .bool(num.boolValue)
+      } else if let intValue = num as? Int {
+        self = .number(.int(intValue))
       } else {
-        self = .number(num)
+        self = .number(.double(num.doubleValue))
       }
     case let err as Swift.Error:
       self = .error(err)
     default:
       self = .null
     }
-  }
-  
-  var type: String {
-    switch self {
-    case .object: return "object"
-    case .array: return "array"
-    case .string: return "string"
-    case .number: return "number"
-    case .bool: return "boolen"
-    case .error: return "error"
-    case .null: return "null"
-    }
-  }
-  
-  var isNull: Bool {
-    return self == .null
-  }
-  
-  var isError: Bool {
-    if case .error = self { return true }
-    return false
-  }
-  
-  var error: Swift.Error? {
-    if case let .error(error) = self { return error }
-    return nil
   }
 }
 
@@ -114,11 +96,11 @@ public extension JSON {
   enum Error: Swift.Error, CustomStringConvertible {
     
     case initalize(error: Swift.Error)
-    case typeMismatch(expected: Any.Type, actual: String)
+    case typeMismatch(expected: Any.Type, actual: Any.Type)
     case notConfirmTo(protocol: Any.Type, actual: Any.Type)
     case encodeToJSON(wrongObject: Any)
     case notExist(dict: [String: Any], key: String)
-    case wrongType(subscript: JSON, key: Index)
+    case wrongType(subscript: JSON, key: JSONKeyConvertible)
     case outOfBounds(arr: [Any], index: Int)
     case formatter(format: String, value: String)
     case customTransfrom(source: Any)
@@ -137,7 +119,7 @@ public extension JSON {
       case .notExist(dict: let dict, key: let key):
         return "Key: \"\(key)\" not exist, dict is: \(dict)"
       case .wrongType(subscript: let json, key: let key):
-        return "Cannot subscrpit key: \(key) to \(json.debugDescription)"
+        return "Cannot subscrpit key: \(key) to \(wrap(json).debugDescription)"
       case .outOfBounds(arr: let arr, index: let index):
         return "Subscript \(index) to \(arr) is out of bounds"
       case .formatter(format: let format, value: let value):
@@ -157,7 +139,7 @@ extension JSON: ExpressibleByDictionaryLiteral {
   
   public init(dictionaryLiteral elements: (String, JSONEncodable)...) {
     var dict = [String: Any](minimumCapacity: elements.count)
-    for element in elements { dict[element.0] = element.1.json.object }
+    for element in elements { dict[element.0] = wrap(element.1.json).object }
     self = .object(dict)
   }
 }
@@ -165,7 +147,7 @@ extension JSON: ExpressibleByDictionaryLiteral {
 extension JSON: ExpressibleByArrayLiteral {
   
   public init(arrayLiteral elements: JSONEncodable...) {
-    self = .array(elements.map { $0.json.object })
+    self = .array(elements.map { wrap($0.json).object })
   }
 }
 
@@ -187,14 +169,14 @@ extension JSON: ExpressibleByStringLiteral {
 extension JSON: ExpressibleByIntegerLiteral {
   
   public init(integerLiteral value: IntegerLiteralType) {
-    self = .number(NSNumber(value: value))
+    self = .number(.int(value))
   }
 }
 
 extension JSON: ExpressibleByFloatLiteral {
   
   public init(floatLiteral value: FloatLiteralType) {
-    self = .number(NSNumber(value: value))
+    self = .number(.double(value))
   }
 }
 
@@ -212,7 +194,7 @@ extension JSON: ExpressibleByNilLiteral {
   }
 }
 
-//MARK: - convert to and from jsonData and jsonString
+//MARK: - convert from jsonData and jsonString
 
 public extension JSON {
     
@@ -222,92 +204,39 @@ public extension JSON {
       let object = try JSONSerialization.jsonObject(with: data, options: options)
       self.init(any: object)
     } catch {
-      self.init(JSON.error(JSON.Error.initalize(error: error)))
+      self = .error(JSON.Error.initalize(error: error))
     }
   }
   
   init(jsonString: String?, options: JSONSerialization.ReadingOptions = []) {
     self.init(jsonData: jsonString?.data(using: String.Encoding.utf8), options: options)
   }
-  
-  func jsonData(withOptions opt: JSONSerialization.WritingOptions = []) throws -> Data {
-    guard JSONSerialization.isValidJSONObject(object) else {
-      throw error ?? Error.encodeToJSON(wrongObject: object)
-    }
-    return try JSONSerialization.data(withJSONObject: object, options: opt)
-  }
-    
-  func jsonString(withOptions opt: JSONSerialization.WritingOptions = [],
-                  encoding ecd: String.Encoding = String.Encoding.utf8) throws -> String {
-    switch self {
-    case .object, .array:
-      let data = try self.jsonData(withOptions: opt)
-      if let jsonSrt = String(data: data, encoding: ecd) { return jsonSrt }
-      throw Error.encodeToJSON(wrongObject: ecd)
-    default:
-      throw error ?? Error.encodeToJSON(wrongObject: object)
-    }
-  }
-}
-
-//MARK: - StringConvertible
-
-extension JSON: CustomStringConvertible, CustomDebugStringConvertible {
-    
-  public var description: String {
-    return (try? jsonString(withOptions: .prettyPrinted)) ?? "\(object)"
-  }
-  
-  public var debugDescription: String {
-    return "\(type): " + ((try? jsonString()) ?? "\(object)")
-  }
 }
 
 //MARK: - Equatable
 
-extension JSON: Equatable { }
-
-public func ==(lhs: JSON, rhs: JSON) -> Bool {
-  switch (lhs, rhs) {
-  case let (.object(l as NSDictionary), .object(r as NSDictionary)):
-    return l == r
-  case let (.array(l as NSArray), .array(r as NSArray)):
-    return l == r
-  case let (.string(l), .string(r)):
-    return l == r
-  case let (.bool(l), .bool(r)):
-    return l == r
-  case let (.number(l), .number(r)):
-    return l == r
-  case (.null, .null):
-    return true
-  default:
-    return false
+extension JSON: Equatable {
+  public static func ==(lhs: JSON, rhs: JSON) -> Bool {
+    switch (lhs, rhs) {
+    case let (.object(l as NSDictionary), .object(r as NSDictionary)):
+      return l == r
+    case let (.array(l as NSArray), .array(r as NSArray)):
+      return l == r
+    case let (.string(l), .string(r)):
+      return l == r
+    case let (.bool(l), .bool(r)):
+      return l == r
+    case let (.number(l), .number(r)):
+      return l == r
+    case (.null, .null):
+      return true
+    default:
+      return false
+    }
   }
 }
 
-//MARK: - For - in
-
-public extension JSON {
-  
-  var dict: [String: Any]? {
-    guard case let .object(dic) = self else { return nil }
-    return dic
-  }
-  
-  var array: [Any]? {
-    guard case let .array(arr) = self else { return nil }
-    return arr
-  }
-  
-  var asDict: LazyMapCollection<[String: Any], (key: String, value: JSON)> {
-    return (dict ?? [:]).lazy.map { ($0.0, JSON(any: $0.1)) }
-  }
-    
-  var asArray: LazyMapCollection<[Any], JSON> {
-    return (array ?? []).lazy.map { JSON(any: $0) }
-  }
-}
+extension JSON.Number: Equatable { }
 
 //MARK: - Dictionary extension
 
