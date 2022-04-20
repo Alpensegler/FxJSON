@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=https://raw.githubusercontent.com/FrainL/FxJSON/master/FxJSON.jpg>
+  <img src=https://raw.githubusercontent.com/Alpensegler/FxJSON/master/FxJSON.jpg>
 </p>
 
 <p align="center">
@@ -24,7 +24,7 @@
 
 #### Its fast
 
-The [benchmarks](https://github.com/delba/JASON/tree/benchmarks) here is the same with  [JASON](https://github.com/delba/JASON) , see [PerformanceTests](https://github.com/FrainL/FxJSON/blob/master/FxJSONTests/PerformanceTests.swift) 。
+The [benchmarks](https://github.com/delba/JASON/tree/benchmarks) here is the same with  [JASON](https://github.com/delba/JASON) , see [PerformanceTests](https://github.com/Alpensegler/FxJSON/blob/master/FxJSONTests/PerformanceTests.swift) 。
 
 |            |         100          |        1000         |        10000        |    Δ    |
 | ---------- | :------------------: | :-----------------: | :-----------------: | :-----: |
@@ -128,7 +128,7 @@ let json = JSON {
 You can use [Carthage](https://github.com/Carthage/Carthage) to install FxJSON by adding it to your `Cartfile`:
 
 ```
-github "FrainL/FxJSON"
+github "Alpensegler/FxJSON"
 ```
 
 #### Manually
